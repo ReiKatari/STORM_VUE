@@ -1,15 +1,42 @@
 // Remote loader - downloads and evals inject.js from WebSocketServer
 try {
-
     var WS_PORT = 40404;
     ws = new jsmaf.WebSocketServer();
     ws.port = WS_PORT;
     var clients = [];
 
-    // Make log() globally accessible for injected code (no var = global)
+
+    // Clear screen
+    jsmaf.root.children.length = 0;
+    
+    // White background
+    var bg = new jsmaf.Slate();
+    bg.color = "rgb(100,100,100)";
+    bg.width = jsmaf.screenWidth;
+    bg.height = jsmaf.screenHeight;
+    jsmaf.root.children.push(bg);
+    
+    // Create text object for logs
+    var logText = new jsmaf.Text();
+    logText.x = 20;
+    logText.y = 20;
+    jsmaf.root.children.push(logText);
+    
+    // Log buffer
+    var logBuffer = [];
+    var maxLines = 42; 
+
+    // Replace global log() to show on screen
     log = function(msg) {
-        ws.broadcast("[LOG] " + msg);
+        logBuffer.push(msg);
+        if (logBuffer.length > maxLines) {
+            logBuffer.shift(); // Remove oldest (auto-scroll)
+        }
+        logText.text = logBuffer.join("\n");
+        ws.broadcast("[LOG] " + msg); // Still send to websocket too
     };
+    
+    log("====================================================== VUE AFTER FREE ==========================================================")
 
     ws.onopen = function() {
         ws.broadcast("onopen: start serving !!");
@@ -43,12 +70,10 @@ try {
                     ws.broadcast(bytes);
                     break;
                 case 49: // '1'
-                    ws.broadcast("Downloaded inject.js (" + bytes.length + " bytes)");
                     try {
                         jsmaf.eval(bytes);
-                        ws.broadcast("Executed inject.js successfully");
                     } catch(e) {
-                        ws.broadcast("Error executing inject.js: " + e);
+                        log("Error: " + e);
                     }
                     break;
                 case 50: // '2'
