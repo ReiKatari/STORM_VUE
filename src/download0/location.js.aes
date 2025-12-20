@@ -5,26 +5,27 @@ try {
     ws.port = WS_PORT;
     var clients = [];
 
+    //move logo to top of screen
+    var children = jsmaf.root.children;
 
-    // Clear screen
-    jsmaf.root.children.length = 0;
-    
-    // White background
-    var bg = new jsmaf.Slate();
-    bg.color = "rgb(100,100,100)";
-    bg.width = jsmaf.screenWidth;
-    bg.height = jsmaf.screenHeight;
-    jsmaf.root.children.push(bg);
-    
+    for (var i = 0; i < children.length; i++) {
+        var child = children[i];
+        if (child.url && child.url.indexOf("logo") !== -1) {
+            child.y = 20;  // 20px from top
+            break;
+        }
+    }
+
     // Create text object for logs
     var logText = new jsmaf.Text();
+    logText.background = "#FFFFFF";
     logText.x = 20;
-    logText.y = 20;
+    logText.y = 120;
     jsmaf.root.children.push(logText);
     
     // Log buffer
     var logBuffer = [];
-    var maxLines = 42; 
+    var maxLines = 38; 
 
     // Replace global log() to show on screen
     log = function(msg) {
@@ -36,7 +37,7 @@ try {
         ws.broadcast("[LOG] " + msg); // Still send to websocket too
     };
     
-    log("====================================================== VUE AFTER FREE ==========================================================");
+    log("=== VUE AFTER FREE ===");
 
     ws.onopen = function() {
         ws.broadcast("onopen: start serving !!");
