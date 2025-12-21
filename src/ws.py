@@ -3,26 +3,19 @@
 import asyncio
 import pathlib
 import argparse
-import readline
 import websockets
-
 
 parser = argparse.ArgumentParser(description="WebSocket client for JSMAF")
 parser.add_argument("ip", help="IP address of the PS4")
-parser.add_argument(
-    "-p", "--port", type=int, default=40404, help="Port number (default: 42069)"
-)
-
+parser.add_argument("-p", "--port", type=int, default=40404, help="Port number (default: 40404)")
+parser.add_argument("-d", "--delay", type=int, default=2, help="Delay (default: 2)")
 
 args = parser.parse_args()
+
 IP = args.ip
 PORT = args.port
-
-
-DELAY = 2
-
-retry = True
-
+DELAY = args.delay
+RETRY = True
 
 async def send_file(ws: websockets.ClientConnection, file_path: str):
     try:
@@ -38,8 +31,9 @@ async def send_file(ws: websockets.ClientConnection, file_path: str):
     except Exception as e:
         print(f"[!] Failed to send file: {e}")
 
-
 async def command(ws: websockets.ClientConnection):
+    global RETRY
+
     loop = asyncio.get_event_loop()
     while ws.state == websockets.protocol.State.OPEN:
         try:
@@ -47,8 +41,7 @@ async def command(ws: websockets.ClientConnection):
         except (EOFError, KeyboardInterrupt):
             print("\n[*] Disconnecting...")
             await ws.close()
-            global retry
-            retry = False
+            RETRY = False
             break
 
         parts = cmd.split(maxsplit=1)
@@ -58,23 +51,23 @@ async def command(ws: websockets.ClientConnection):
         elif cmd.lower() in ("quit", "exit", "disconnect"):
             print("[*] Disconnecting...")
             await ws.close()
-            retry = False
+            RETRY = False
             break
         else:
             print("[*] Unknown command. Use: send <path-to-file>")
-
 
 async def receiver(ws: websockets.ClientConnection):
     try:
         async for data in ws:
             if isinstance(data, str):
                 print(data)
+    except websockets.ConnectionClosed:
+        pass
     except Exception as e:
         print(f"[!] {e}")
 
-
 async def main():
-    while retry:
+    while RETRY:
         ws = None
         receiver_task = None
         command_task = None
@@ -100,7 +93,6 @@ async def main():
                 command_task.cancel()
             if ws is not None and ws.state != websockets.protocol.State.CLOSED:
                 await ws.close()
-
 
 if __name__ == "__main__":
     asyncio.run(main())
