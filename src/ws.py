@@ -2,6 +2,7 @@
 """Send inject.js to PS4 for execution"""
 import asyncio
 import pathlib
+
 IP = "192.168.1.6"
 
 import aioconsole
@@ -34,7 +35,8 @@ async def command(ws: websockets.WebSocketClientProtocol):
         parts = cmd.split(maxsplit=1)
 
         if len(parts) == 2 and parts[0].lower() == "send":
-            await send_file(ws, parts[1])        elif cmd.lower() in ("quit", "exit", "disconnect"):
+            await send_file(ws, parts[1])
+        elif cmd.lower() in ("quit", "exit", "disconnect"):
             print("[*] Disconnecting...")
             await ws.close()
             global retry
