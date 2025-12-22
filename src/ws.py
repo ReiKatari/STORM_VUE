@@ -4,6 +4,7 @@ import asyncio
 import pathlib
 import argparse
 import websockets
+import readline
 
 parser = argparse.ArgumentParser(description="WebSocket client for JSMAF")
 parser.add_argument("ip", help="IP address of the PS4")
