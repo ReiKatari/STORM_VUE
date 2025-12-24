@@ -11,5 +11,10 @@ export default defineConfig([
   neostandard({
     ts: true,
     env: ['browser', 'es2015'],
-  })
+  }),
+  {
+    rules: {
+      'no-var': 'off'
+    }
+  }
 ])
