@@ -29,7 +29,7 @@ jobs:
           node-version: "20"
 
       - name: Install deps
-        run: npm ci
+        run: npm install
 
       - name: ESLint auto-fix
         run: npx eslint . --fix
