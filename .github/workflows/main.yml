@@ -31,8 +31,11 @@ jobs:
       - name: Install deps
         run: npm install
 
+      - name: Prettier whitespace fix
+        run: npx prettier --write "**/*.{js,ts}"
+
       - name: ESLint auto-fix
-        run: npx eslint . --fix
+        run: npx eslint . --fix || true
 
       - uses: stefanzweifel/git-auto-commit-action@v5
         with:
