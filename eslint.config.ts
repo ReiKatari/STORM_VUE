@@ -24,11 +24,6 @@ export default defineConfig([
       'no-unused-vars': 'off',
       'no-var': 'off',
 
-      // Reduce noise from stylistic strictness
-      '@stylistic/no-tabs': 'off',
-      '@stylistic/indent': 'off',
-      '@stylistic/no-mixed-spaces-and-tabs': 'off',
-
       // TS duplicates
       '@typescript-eslint/no-unused-vars': 'off',
     },
