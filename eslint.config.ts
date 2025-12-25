@@ -21,7 +21,7 @@ export default defineConfig([
     rules: {
       camelcase: 'off',
       eqeqeq: 'off',
-      'no-unused-vars': 'off',
+      'no-unused-vars': 'off', //jsmaf, log, psn, all defined globally 
       'no-var': 'off',
 
       // TS duplicates
