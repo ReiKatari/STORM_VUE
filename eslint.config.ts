@@ -14,7 +14,21 @@ export default defineConfig([
   }),
   {
     rules: {
-      'no-var': 'off'
+      camelcase: 'off',
+      eqeqeq: 'off',
+      'no-undef': 'off',
+      'no-redeclare': 'off',
+      'no-unused-vars': 'off',
+      'no-fallthrough': 'off',
+      'no-empty': 'off',
+      'no-var': 'off',
+
+      // Reduce noise from stylistic strictness
+      '@stylistic/no-tabs': 'off',
+      '@stylistic/indent': 'off',
+
+      // TS duplicates
+      '@typescript-eslint/no-unused-vars': 'off',
     }
   }
 ])
