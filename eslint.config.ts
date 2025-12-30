@@ -26,6 +26,7 @@ export default defineConfig([
       'no-redeclare': 'off',
       'no-unused-expressions': 'off',
       'no-fallthrough': 'off',
+      'no-new-native-nonconstructor': 'off', // we use our own BigInt
 
       // TS duplicates
       '@typescript-eslint/no-unused-vars': 'off',
