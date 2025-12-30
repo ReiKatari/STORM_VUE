@@ -834,6 +834,23 @@ var mem = {
     master[5] = addr.hi()
     slave[0] = val
   },
+  write1: function (addr, val) {
+    var byte_val = (val instanceof BigInt) ? val.lo() : val
+    var offset = addr.lo() & 3
+    var aligned_addr = new BigInt(addr.hi(), addr.lo() & ~3)
+
+    // Read current 4-byte value at aligned address
+    master[4] = aligned_addr.lo()
+    master[5] = aligned_addr.hi()
+    var current = slave[0]
+
+    // Modify the specific byte
+    var mask = 0xFF << (offset * 8)
+    var new_val = (current & ~mask) | ((byte_val & 0xFF) << (offset * 8))
+
+    // Write back the modified 4-byte value
+    slave[0] = new_val
+  },
   addrof: function (obj) {
     leak_obj.obj = obj
     return mem.read8(leak_obj_addr.add(0x10))

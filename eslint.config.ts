@@ -20,12 +20,17 @@ export default defineConfig([
   {
     rules: {
       camelcase: 'off',
-      'no-unused-vars': 'off', //jsmaf, log, psn, all defined globally 
+      'no-unused-vars': 'off', // jsmaf, log, psn, all defined globally
       'no-var': 'off',
       'no-undef': 'off',
+      'no-redeclare': 'off',
+      'no-unused-expressions': 'off',
+      'no-fallthrough': 'off',
+      'no-new-native-nonconstructor': 'off', // we use our own BigInt
 
       // TS duplicates
       '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-expressions': 'off',
     },
   },
 ])
