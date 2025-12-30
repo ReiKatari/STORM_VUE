@@ -62,7 +62,7 @@ var CPU_WHICH_TID = 1
 var RTHDR_TAG = 0x13370000
 var UIO_IOV_NUM = 0x14
 var MSG_IOV_NUM = 0x17
-var IPV6_SOCK_NUM = 64
+var IPV6_SOCK_NUM = 128
 
 // Thread counts (note: JS doesn't have real threads - will need workaround)
 var IOV_THREAD_NUM = 4
@@ -81,14 +81,33 @@ var SYS_WRITE = 0x04
 var SYS_CLOSE = 0x06
 var SYS_GETPID = 0x14
 var SYS_SETUID = 0x17
+var SYS_GETUID = 0x18
 var SYS_RECVMSG = 0x1B
+var SYS_DUP = 0x29
 var SYS_PIPE = 0x2A
 var SYS_IOCTL = 0x36
-var SYS_DUP = 0x29
 var SYS_SOCKET = 0x61
 var SYS_SETSOCKOPT = 0x69
 var SYS_GETSOCKOPT = 0x76
 var SYS_READV = 0x78
 var SYS_WRITEV = 0x79
 var SYS_SOCKETPAIR = 0x88
+var SYS_NANOSLEEP = 0xF0
 var SYS_KQUEUE = 0x16E
+var SYS_THR_SUSPEND_UCONTEXT = 0x1AB
+var SYS_THR_RESUME_UCONTEXT = 0x1AC
+var SYS_THR_NEW = 0x1C7
+var SYS_THR_EXIT = 0x1CE
+
+// Kernel symbols
+var SYS_NETCONTROL_SYMBOL = '__sys_netcontrol'
+
+// Threading constants
+var JMPBUF_SIZE = 0x60
+var THR_NEW_ARGS_SIZE = 0x80
+var DEFAULT_STACK_SIZE = 0x400
+var DEFAULT_TLS_SIZE = 0x40
+
+// Libc symbols (will be resolved at runtime)
+var SETJMP_SYMBOL = 'setjmp'
+var LONGJMP_SYMBOL = 'longjmp'
