@@ -137,11 +137,11 @@ interface StructConstructor<const Name extends string, const T extends readonly 
   readonly fields: T
 }
 
-declare type struct = {
+declare type Struct = {
   create<const Name extends string, const T extends StructField[]>(name: Name, fields: T): StructConstructor<Name, T>
 }
 
-declare type mem = {
+declare type Mem = {
   allocs: Map<vue.BigInt, ArrayBufferLike>
   read8 (addr: vue.BigInt): vue.BigInt
   read4 (addr: vue.BigInt): vue.BigInt
@@ -155,7 +155,7 @@ declare type mem = {
   free_all (): void
 }
 
-declare type utils = {
+declare type Utils = {
   base_addr (func_addr: vue.BigInt): vue.BigInt
   notify (msg: string): void
   str (addr: vue.BigInt): string
@@ -164,7 +164,7 @@ declare type utils = {
   set_backing (view: ArrayBufferLike, addr: vue.BigInt): void
 }
 
-declare type rop = {
+declare type Rop = {
   init (): void
   free (): void
   reset (): void
@@ -181,7 +181,7 @@ type ArgTypeToRealType<T> = T extends 'bigint' ? vue.BigInt :
       T extends 'string' ? string :
         never
 
-declare type fn = {
+declare type Fn = {
   create <const Args extends ('bigint' | 'number' | 'boolean' | 'string')[], Return extends ('bigint' | 'boolean' | 'string')>(addr: vue.BigInt | number, args: Args, ret: Return): (...func_args: { [K in keyof Args]: ArgTypeToRealType<Args[K]> }) => ArgTypeToRealType<Return>
 }
 
@@ -192,3 +192,9 @@ declare var gadgets: Record<string, vue.BigInt>
 
 function log (msg: string): void
 function debug (msg: string): void
+
+declare var mem: Mem
+declare var struct: Struct
+declare var utils: Utils
+declare var rop: Rop
+declare var fn: Fn

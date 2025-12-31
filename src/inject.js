@@ -447,7 +447,7 @@ DataView.prototype.setBigInt = function (byteOffset, value, littleEndian) {
 }
 
 /**
- * @type {struct}
+ * @type {Struct}
  */
 var struct = {
   create: function (name, fields) {
@@ -810,7 +810,7 @@ debug(`master_addr: ${master_addr}`)
 log('Achieved ARW !!')
 
 /**
- * @type {mem}
+ * @type {Mem}
  */
 var mem = {
   allocs: new Map(),
@@ -884,7 +884,7 @@ var mem = {
 }
 
 /**
- * @type {utils}
+ * @type {Utils}
  */
 var utils = {
   base_addr: function (func_addr) {
@@ -1031,7 +1031,7 @@ var gadgets = {
 }
 
 /**
- * @type {rop}
+ * @type {Rop}
  */
 var rop = {
   idx: 0,
@@ -1171,7 +1171,7 @@ var rop = {
 }
 
 /**
- * @type {fn}
+ * @type {Fn}
  */
 var fn = {
   // args is just for typing, not used
