@@ -1,11 +1,5 @@
 // NetControl Kernel Exploit - Global Constants
-// Ported from poop.java by Andy Nguyen
-
-
-
-//for vue exploit
-
-
+// Ported from NetControlImpl.java by Andy Nguyen
 
 // Kernel constants
 var KERNEL_PID = 0
@@ -64,7 +58,6 @@ var UIO_IOV_NUM = 0x14
 var MSG_IOV_NUM = 0x17
 var IPV6_SOCK_NUM = 128
 
-// Thread counts (note: JS doesn't have real threads - will need workaround)
 var IOV_THREAD_NUM = 4
 var UIO_THREAD_NUM = 4
 
@@ -112,8 +105,7 @@ var DEFAULT_TLS_SIZE = 0x40
 var SETJMP_SYMBOL = 'setjmp'
 var LONGJMP_SYMBOL = 'longjmp'
 
-// Libc function offsets (PS4 6.20) - Real function addresses, not GOT/PLT
-// Usage: func_addr = libc_addr.add(new BigInt(0, OFFSET))
+// Libc function offsets
 var PTHREAD_CREATE_OFFSET = 0x555A0
 var PTHREAD_EXIT_OFFSET = 0x55490
 var PTHREAD_JOIN_OFFSET = 0x55540
