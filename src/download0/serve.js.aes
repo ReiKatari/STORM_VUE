@@ -36,8 +36,10 @@ try {
             }
             logText.text = logBuffer.join("\n");
         }
-
-        ws.broadcast(msg); // Still send to websocket too
+        
+        if (ws && typeof ws.broadcast === 'function') {//in case netctrl crashes websocket continue eval and on screen logging
+            ws.broadcast(msg);
+        } 
     }
     log = function(msg) {
         _log(`[+] ${msg}`, true)
