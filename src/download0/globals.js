@@ -58,6 +58,11 @@ var UIO_IOV_NUM = 0x14
 var MSG_IOV_NUM = 0x17
 var IPV6_SOCK_NUM = 128
 
+// Retry parameters (adjusted for JS/pthread environment)
+var TWIN_TRIES = 5000  // Reduced from 15000 (Java has better threading)
+var UAF_TRIES = 5000   // Reduced from 50000 (avoid overwhelming pthread workers)
+var KQUEUE_TRIES = 300000
+
 var IOV_THREAD_NUM = 4
 var UIO_THREAD_NUM = 4
 
@@ -104,6 +109,8 @@ var DEFAULT_TLS_SIZE = 0x40
 // Libc symbols (will be resolved at runtime)
 var SETJMP_SYMBOL = 'setjmp'
 var LONGJMP_SYMBOL = 'longjmp'
+
+
 
 // LibKernel pthread offsets (PS4 6.20)
 var SCE_PTHREAD_CREATE_OFFSET = 0x13AA0
