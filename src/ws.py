@@ -68,6 +68,7 @@ async def receiver(ws: websockets.ClientConnection):
             if isinstance(data, str):
                 print(data)
     except websockets.ConnectionClosed:
+        print("[*] Disconnected")
         pass
     except Exception as e:
         print(f"[!] {e}")
