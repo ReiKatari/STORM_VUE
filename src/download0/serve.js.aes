@@ -1,4 +1,5 @@
 // Remote loader - downloads and evals inject.js from WebSocketServer
+jsmaf.remotePlay = true //enable remoteplay
 
 var WS_PORT = 40404;
 
