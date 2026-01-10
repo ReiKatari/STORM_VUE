@@ -732,7 +732,7 @@ if (!isJailbroken()){
     bin_loader_main();
 }
 else {
-     bl_network_loader()
+     bl_load_from_file('/download0/payloads/elfldr.elf')
 }
 };
 
