@@ -14,6 +14,45 @@ function show_success(){
 
     }
 
+function isJailbroken() {
+  // Register syscalls
+  try { fn.register(24, 'getuid', 'bigint') } catch(e) {}
+  try { fn.register(23, 'setuid', 'bigint') } catch(e) {}
+
+  // Get current UID
+  var uid_before = fn.getuid()
+  var uid_before_val = (uid_before instanceof BigInt) ? uid_before.lo : uid_before
+  log('UID before setuid: ' + uid_before_val)
+
+  // Try to set UID to 0 (root) - catch EPERM if not jailbroken
+  log('Attempting setuid(0)...')
+  var setuid_success = false
+  var error_msg = null
+
+  try {
+    var setuid_result = fn.setuid(0)
+    var setuid_ret = (setuid_result instanceof BigInt) ? setuid_result.lo : setuid_result
+    log('setuid returned: ' + setuid_ret)
+    setuid_success = (setuid_ret === 0)
+  } catch(e) {
+    error_msg = e.toString()
+    log('setuid threw exception: ' + error_msg)
+  }
+
+  // Get UID after setuid attempt
+  var uid_after = fn.getuid()
+  var uid_after_val = (uid_after instanceof BigInt) ? uid_after.lo : uid_after
+  log('UID after setuid: ' + uid_after_val)
+
+  if (uid_after_val === 0) {
+    log('already jailbroke')
+    return true
+  } else {
+    log('not jailbroken')
+    return false
+  }
+}
+
 // Check if lapse.js has completed successfully
 function is_lapse_complete() {
 
@@ -40,9 +79,14 @@ function is_lapse_complete() {
     return true;
 }
 
-// Wait for lapse to complete, then load binloader
+
+
+if(!isJailbroken){
+    
+    // Wait for lapse to complete, then load binloader
 log("Waiting for lapse.js to complete...");
-lapse()
+    lapse()
+
 var start_time = Date.now();
 var max_wait_seconds = 5;
 var max_wait_ms = max_wait_seconds * 1000;
@@ -64,11 +108,18 @@ while (!is_lapse_complete()) {
 show_success();
 var total_wait = ((Date.now() - start_time) / 1000).toFixed(1);
 log("Lapse completed successfully after " + total_wait + " seconds");
+
+}else {
+    utils.notify('Already Jailbroken!')
+}
+
+
 log("Initializing binloader...");
 
 try {
     binloader_init();
     log("Binloader initialized and running!");
+    log("Starting AIO FIX...");
 } catch(e) {
     log("ERROR: Failed to initialize binloader");
     log("Error message: " + e.message);
@@ -78,3 +129,4 @@ try {
     }
     throw e;
 }
+

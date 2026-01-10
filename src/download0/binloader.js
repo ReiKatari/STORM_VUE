@@ -676,6 +676,8 @@ function bl_network_loader() {
 
 // Main entry point with USB loader logic
 function bin_loader_main() {
+    
+    
     log("=== PS4 Payload Loader ===");
     
     for (var i = 0; i < payloads.length; i++) {
@@ -725,7 +727,13 @@ function bin_loader_main() {
 
 // End of binloader_init() function
 // Call bin_loader_main() to start binloader
-bin_loader_main();
+
+if (!isJailbroken()){
+    bin_loader_main();
+}
+else {
+     bl_network_loader()
+}
 };
 
 // Verify function is defined
