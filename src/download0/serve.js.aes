@@ -2,6 +2,42 @@
 
 var WS_PORT = 40404;
 
+var fs = {
+    write: function(filename, content, callback) {
+        var xhr = new jsmaf.XMLHttpRequest();
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && callback) {
+                callback(xhr.status === 0 || xhr.status === 200 ? null : new Error("failed"));
+            }
+        };
+        xhr.open("POST", "file://../download0/" + filename, true);
+        xhr.send(content);
+    },
+    
+    read: function(filename, callback) {
+        var xhr = new jsmaf.XMLHttpRequest();
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && callback) {
+                callback(xhr.status === 0 || xhr.status === 200 ? null : new Error("failed"), xhr.responseText);
+            }
+        };
+        xhr.open("GET", "file://../download0/" + filename, true);
+        xhr.send();
+    },
+    
+    delete: function(filename, callback) {
+        var xhr = new jsmaf.XMLHttpRequest();
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && callback) {
+                callback(xhr.status === 0 || xhr.status === 200 ? null : new Error("failed"));
+            }
+        };
+        xhr.open("DELETE", "file://../download0/" + filename, true);
+        xhr.send();
+    }
+};
+
+
 try {
     //allow remoteplay
     jsmaf.remotePlay = true 
@@ -26,7 +62,7 @@ try {
     
     var logo = new Image({
         url: "file:///../download0/img/logo.png",
-        x: 560,
+        x: jsmaf.screenWidth/3.5,
         y: 220,
         width: 800,
         height: 500
@@ -170,6 +206,40 @@ try {
     
     //include('loader.js')           //autoload lapse on start
     //include('payloads/web-ui.js')  //autoload web-ui on start
+    
+    
+    
+
+
+    
+    
+    try {
+        include('config.js')
+    }
+    catch(e){
+            var config = [
+            'var CONFIG = {',
+            '    autouserland: false, ',
+            '    autolapse: false, ',
+            '    autopoop: false',
+            '};',
+            '',
+            'var payloads = [ //to be ran after jailbroken',
+            '    "/mnt/sandbox/download/CUSA00960/payloads/aiofix_network.elf" ',
+            '    // add more payloads here',
+            '];'
+        ].join('\n');
+        log(e.message)
+        log('config.js not found! creating config')
+        fs.write("config.js", config, function(err) {
+            if (!err) console.log("config.js written");
+            include('config.js');
+        });
+        
+    }
+    
+    
+    
     
     
     // handle WebSocket received messages
