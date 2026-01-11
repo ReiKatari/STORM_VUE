@@ -53,6 +53,8 @@ function isJailbroken() {
   }
 }
 
+var is_jailbroken = isJailbroken()
+
 // Check if lapse.js has completed successfully
 function is_lapse_complete() {
 
@@ -81,7 +83,7 @@ function is_lapse_complete() {
 
 
 
-if(!isJailbroken){
+if(!is_jailbroken){
     
     // Wait for lapse to complete, then load binloader
 log("Waiting for lapse.js to complete...");

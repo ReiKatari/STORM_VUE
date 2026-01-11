@@ -728,11 +728,11 @@ function bin_loader_main() {
 // End of binloader_init() function
 // Call bin_loader_main() to start binloader
 
-if (!isJailbroken()){
+if (!is_jailbroken){
     bin_loader_main();
 }
 else {
-     bl_load_from_file('/download0/payloads/elfldr.elf')
+    bl_load_from_file('/download0/payloads/elfldr.elf')
 }
 };
 
