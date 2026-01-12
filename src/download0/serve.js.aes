@@ -69,8 +69,34 @@ try {
     });
     jsmaf.root.children.push(logo);
     
+
     
     jsmaf.onKeyDown = function(keyCode) {
+        //1 = l3
+        //2 = r3
+        //3 = options
+        //4 = up
+        //5 = right
+        //6 = down
+        //7 = left
+        //8 + 53= l2
+        //9 + 54= r2
+        //12 = triangle
+        //13 = circle
+        //14 = cross
+        //15 = square
+        //11 = r1
+        //10 = r2
+        //16 = touchpad click
+        //55 = left stick up
+        //56 = left stick right
+        //57 = left stick down
+        //58 = left stick left
+        //59 = right stick up
+        //60 = right stick right
+        //61 = right stick down
+        //62 = right stick left
+
         //cross pressed
         if (keyCode === 14) {
             if(!jsmaf.circleIsAdvanceButton) {
@@ -83,6 +109,11 @@ try {
                 include('loader.js')
             }
         }
+        //triangle
+        else if (keyCode === 12) {
+            alert('UwU')
+        }
+        
     }
 
     var bg_success = new Image({
@@ -227,7 +258,6 @@ try {
         
     }
     
-    if(CONFIG.autouserland){  include('userland.js')  }
     if(CONFIG.autolapse){  include('loader.js')  }
     if(CONFIG.autopoop){  include('poop.js')  }
     

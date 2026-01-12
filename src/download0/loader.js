@@ -2,15 +2,17 @@
 
 // Now load userland and lapse
     // Check if libc_addr is defined
-if (typeof libc_addr === 'undefined') {
+    if (typeof libc_addr === 'undefined') {
         include('userland.js')
-}
+    }
+
 include('binloader.js')
 include('lapse.js')
-
 function show_success(){
-    jsmaf.root.children.push(bg_success);
-}
+    
+        jsmaf.root.children.push(bg_success);
+
+    }
 
 function isJailbroken() {
   // Register syscalls
@@ -81,7 +83,7 @@ function is_lapse_complete() {
 
 
 
-if(!isJailbroken()){
+if(!is_jailbroken){
     
     // Wait for lapse to complete, then load binloader
 log("Waiting for lapse.js to complete...");
@@ -119,6 +121,7 @@ log("Initializing binloader...");
 try {
     binloader_init();
     log("Binloader initialized and running!");
+    log("Starting AIO FIX...");
 } catch(e) {
     log("ERROR: Failed to initialize binloader");
     log("Error message: " + e.message);

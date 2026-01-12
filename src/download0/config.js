@@ -1,5 +1,4 @@
 var CONFIG = {
-    autouserland: false, 
     autolapse: false, 
     autopoop: false,
 };
