@@ -9,11 +9,6 @@ binloader_init = function() {
 log("binloader_init(): Initializing binloader...");
 
 // Check dependencies
-if (typeof kernel === 'undefined') {
-    log("ERROR: kernel is undefined! Lapse may not have completed.");
-    throw new Error("kernel not available - cannot initialize binloader");
-}
-
 if (typeof fn === 'undefined') {
     log("ERROR: fn object is undefined! userland.js not loaded?");
     throw new Error("fn object not available - cannot initialize binloader");
@@ -572,7 +567,7 @@ function bl_read_payload_from_socket(client_sock, max_size) {
 }
 
 // Load and run payload from file
-function bl_load_from_file(path) {
+bl_load_from_file = function(path) {
     log("Loading payload from: " + path);
 
     var payload = bl_read_file(path);
@@ -599,10 +594,10 @@ function bl_load_from_file(path) {
     }
 
     return true;
-}
+};
 
 // Network binloader (fallback)
-function bl_network_loader() {
+bl_network_loader = function() {
     log("Starting network payload server...");
 
     var server_sock;
@@ -672,7 +667,7 @@ function bl_network_loader() {
     }
 
     return true;
-}
+};
 
 // Main entry point with USB loader logic
 function bin_loader_main() {

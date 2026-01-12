@@ -111,7 +111,7 @@ try {
         }
         //triangle
         else if (keyCode === 12) {
-            alert('UwU')
+            include('payload_host.js')
         }
         
     }
