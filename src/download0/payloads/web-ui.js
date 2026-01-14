@@ -19,6 +19,7 @@ try { fn.register(3, 'read', 'bigint') } catch(e) {}
 try { fn.register(4, 'write', 'bigint') } catch(e) {}
 try { fn.register(6, 'close', 'bigint') } catch(e) {}
 try { fn.register(0x110, 'getdents', 'bigint') } catch(e) {}
+try { fn.register(93, 'select', 'bigint') } catch(e) {}
 
 var socket_sys = fn.socket
 var connect_sys = fn.connect
@@ -31,6 +32,7 @@ var read_sys = fn.read
 var write_sys = fn.write
 var close_sys = fn.close
 var getdents_sys = fn.getdents
+var select_sys = fn.select
 
 var AF_INET = 2
 var SOCK_STREAM = 1
@@ -263,28 +265,58 @@ function get_path(buf, len) {
     return '/'
 }
 
+log('server ready - non-blocking mode')
 log('waiting for connections...')
 
 var count = 0
-var max = 50
+var serverRunning = true
+
+// Prepare select() structures (reuse across calls)
+var readfds = mem.malloc(128)
+var timeout = mem.malloc(16)
+mem.view(timeout).setUint32(0, 0, true)
+mem.view(timeout).setUint32(4, 0, true)
+mem.view(timeout).setUint32(8, 0, true)
+mem.view(timeout).setUint32(12, 0, true)
+
 var client_addr = mem.malloc(16)
 var client_len = mem.malloc(4)
 var req_buf = mem.malloc(4096)
 
-while (count < max) {
-    log('')
-    log('[' + (count + 1) + '/' + max + '] waiting...')
+function handleRequest() {
+    if (!serverRunning) return
 
+    // Clear fd_set and set server fd
+    for (var i = 0; i < 128; i++) {
+        mem.view(readfds).setUint8(i, 0)
+    }
+
+    var fd = srv.lo
+    var byte_index = Math.floor(fd / 8)
+    var bit_index = fd % 8
+    var current = mem.view(readfds).getUint8(byte_index)
+    mem.view(readfds).setUint8(byte_index, current | (1 << bit_index))
+
+    // Poll with select() - returns immediately
+    var nfds = fd + 1
+    var select_ret = select_sys(new BigInt(0, nfds), readfds, new BigInt(0, 0), new BigInt(0, 0), timeout)
+
+    // No connection ready
+    if (select_ret.lo <= 0) return
+
+    // Connection ready - accept won't block
     mem.view(client_len).setUint32(0, 16, true)
     var client_ret = accept_sys(srv, client_addr, client_len)
     var client = client_ret instanceof BigInt ? client_ret.lo : client_ret
 
     if (client < 0) {
         log('accept failed: ' + client)
-        continue
+        return
     }
 
-    log('client connected')
+    count++
+    log('')
+    log('[' + count + '] client connected')
 
     // read request
     var read_ret = read_sys(client, req_buf, new BigInt(0, 4096))
@@ -332,10 +364,19 @@ while (count < max) {
     }
 
     log('closed connection')
-    count++
 }
 
-log('')
-log('reached max requests (' + max + ')')
-close_sys(srv)
-log('done')
+// Non-blocking server loop
+jsmaf.onEnterFrame = handleRequest
+
+// Keep script alive - don't exit immediately
+jsmaf.onKeyDown = function(keyCode) {
+    if (keyCode === 13) { // Circle button - exit
+        log('shutting down server...')
+        serverRunning = false
+        close_sys(srv)
+        log('server closed')
+        jsmaf.onEnterFrame = null
+        jsmaf.onKeyDown = null
+    }
+}

@@ -139,10 +139,10 @@
 
     var startY = 200;
     var buttonSpacing = 90;
-    var buttonsPerRow = 3;
+    var buttonsPerRow = 5;
     var buttonWidth = 300;
     var buttonHeight = 80;
-    var startX = 50;
+    var startX = 130;
     var xSpacing = 340;
 
     for (var i = 0; i < fileList.length; i++) {
@@ -256,20 +256,61 @@
     jsmaf.onKeyDown = function(keyCode) {
         log("Key pressed: " + keyCode);
 
-        if (keyCode === 5) {
-            currentButton = (currentButton + 1) % buttons.length;
-            updateHighlight();
-        }
-        else if (keyCode === 7) {
-            currentButton = (currentButton - 1 + buttons.length) % buttons.length;
-            updateHighlight();
-        }
-        else if (keyCode === 6) {
-            currentButton = (currentButton + 1) % buttons.length;
+        var fileButtonCount = fileList.length;
+        var exitButtonIndex = buttons.length - 1;
+
+        if (keyCode === 6) {
+            if (currentButton === exitButtonIndex) {
+                return;
+            }
+            var nextButton = currentButton + buttonsPerRow;
+            if (nextButton >= fileButtonCount) {
+                currentButton = exitButtonIndex;
+            } else {
+                currentButton = nextButton;
+            }
             updateHighlight();
         }
         else if (keyCode === 4) {
-            currentButton = (currentButton - 1 + buttons.length) % buttons.length;
+            if (currentButton === exitButtonIndex) {
+                var lastRow = Math.floor((fileButtonCount - 1) / buttonsPerRow);
+                var firstInLastRow = lastRow * buttonsPerRow;
+                var col = 0;
+                if (fileButtonCount > 0) {
+                    col = Math.min(buttonsPerRow - 1, (fileButtonCount - 1) % buttonsPerRow);
+                }
+                currentButton = Math.min(firstInLastRow + col, fileButtonCount - 1);
+            } else {
+                var nextButton = currentButton - buttonsPerRow;
+                if (nextButton >= 0) {
+                    currentButton = nextButton;
+                }
+            }
+            updateHighlight();
+        }
+        else if (keyCode === 5) {
+            if (currentButton === exitButtonIndex) {
+                return;
+            }
+            var row = Math.floor(currentButton / buttonsPerRow);
+            var col = currentButton % buttonsPerRow;
+            if (col < buttonsPerRow - 1) {
+                var nextButton = currentButton + 1;
+                if (nextButton < fileButtonCount) {
+                    currentButton = nextButton;
+                }
+            }
+            updateHighlight();
+        }
+        else if (keyCode === 7) {
+            if (currentButton === exitButtonIndex) {
+                currentButton = fileButtonCount - 1;
+            } else {
+                var col = currentButton % buttonsPerRow;
+                if (col > 0) {
+                    currentButton = currentButton - 1;
+                }
+            }
             updateHighlight();
         }
         else if (keyCode === 14) {
