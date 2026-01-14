@@ -115,7 +115,9 @@ try {
         }
         
     }
-
+    
+    
+    
     var bg_success = new Image({
         url: "file:///../download0/img/bg-success.png",
         x: 0,
@@ -133,30 +135,8 @@ try {
         height: 1080
     });
     
-            // Background
-    var cross = new Image({
-        url: "file:///assets/img/icon_cross.png",
-        x: 895,
-        y: 1010,
-        width: 40,
-        height: 40
-    });
-    
-    var circle = new Image({
-        url: "file:///assets/img/icon_cross.png",
-        x: 895,
-        y: 1010,
-        width: 40,
-        height: 40
-    });
-    
-    if(jsmaf.circleIsAdvanceButton) {
-         jsmaf.root.children.push(circle);
-    
-    }
-    else {
-         jsmaf.root.children.push(cross);
-    }
+
+
    
    
 
@@ -219,20 +199,8 @@ try {
         _log(`[-] ${msg}`, true)
     }
     
-    //log("=== VUE AFTER FREE ===");
     
-    
-    //startup scripts
-    
-    //include('loader.js')           //autoload lapse on start
-    //include('payloads/web-ui.js')  //autoload web-ui on start
-    
-    
-    
-
-
-    
-    
+   
     try {
         include('config.js')
     }
@@ -261,7 +229,7 @@ try {
     if(CONFIG.autolapse){  include('loader.js')  }
     if(CONFIG.autopoop){  include('poop.js')  }
     
-    
+    include('main-menu.js')
     
     
     // handle WebSocket received messages

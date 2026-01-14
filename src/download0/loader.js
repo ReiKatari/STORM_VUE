@@ -113,7 +113,7 @@ log("Lapse completed successfully after " + total_wait + " seconds");
 
 }else {
     utils.notify('Already Jailbroken!')
-    include('payload_host.js')
+    include('main-menu.js')
 }
 
 

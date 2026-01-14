@@ -56,7 +56,7 @@
     var selectedButtonImg = "file:///assets/img/button_over_9.png";
 
     var background = new Image({
-        url: "file:///assets/img/multiview_bg.png",
+        url: "file:///../download0/img/multiview_bg_VAF.png",
         x: 0,
         y: 0,
         width: 1920,
@@ -65,13 +65,22 @@
     jsmaf.root.children.push(background);
 
     var logo = new Image({
-        url: "file:///assets/img/cobra_logo.png",
+        url: "file:///../download0/img/logo.png",
         x: 1620,
         y: 0,
         width: 300,
-        height: 300
+        height: 169
     });
     jsmaf.root.children.push(logo);
+
+    var title = new Image({
+        url: "file:///../download0/img/pl_menu_btn_txt.png",
+        x: 760,
+        y: 100,
+        width: 400,
+        height: 75
+    });
+    jsmaf.root.children.push(title);
 
     if (typeof fn !== 'undefined') {
         if (!fn.open_sys) fn.register(0x05, 'open_sys', 'bigint');
@@ -128,7 +137,7 @@
 
     log("Total files found: " + fileList.length);
 
-    var startY = 50;
+    var startY = 200;
     var buttonSpacing = 90;
     var buttonsPerRow = 3;
     var buttonWidth = 300;
@@ -207,18 +216,18 @@
     buttonMarkers.push(exitMarker);
     jsmaf.root.children.push(exitMarker);
 
-    var exitText = new Text({
-        x: exitX + 110,
-        y: exitY + 30,
-        width: 80,
-        height: 40,
-        text: "Exit",
-        color: "rgb(255,255,255)",
-        background: "transparent",
-        fontSize: 28
+    var exitTextImgWidth = buttonWidth * 0.5;
+    var exitTextImgHeight = buttonHeight * 0.5;
+
+    var exitTextImg = new Image({
+        url: "file:///../download0/img/back_btn_txt.png",
+        x: exitX + (buttonWidth - exitTextImgWidth) / 2,
+        y: exitY + (buttonHeight - exitTextImgHeight) / 2,
+        width: exitTextImgWidth,
+        height: exitTextImgHeight
     });
-    buttonTexts.push(exitText);
-    jsmaf.root.children.push(exitText);
+    buttonTexts.push(exitTextImg);
+    jsmaf.root.children.push(exitTextImg);
 
     function updateHighlight() {
         for (var i = 0; i < buttons.length; i++) {
@@ -269,9 +278,9 @@
         else if (keyCode === 13) {
             log("Going back to main menu...");
             try {
-                include("serve.js.aes");
+                include("main-menu.js");
             } catch (e) {
-                log("ERROR loading serve.js.aes: " + e.message);
+                log("ERROR loading main-menu.js: " + e.message);
                 if (e.stack) log(e.stack);
             }
         }
@@ -279,28 +288,13 @@
 
     function handleButtonPress() {
         if (currentButton === buttons.length - 1) {
-            log("Exiting application...");
+            log("Going back to main menu...");
             try {
-                if (typeof master === 'undefined' || typeof slave === 'undefined') {
-                    log("userland.js not fully initialized, loading...");
-                    include("userland.js");
-                }
-
-                if (!fn.getpid) fn.register(0x14, 'getpid', 'bigint');
-                if (!fn.kill) fn.register(0x25, 'kill', 'bigint');
-
-                var pid = fn.getpid();
-                var pid_num = (pid instanceof BigInt) ? pid.lo : pid;
-                log("Current PID: " + pid_num);
-                log("Sending SIGKILL to PID " + pid_num);
-
-                fn.kill(pid, new BigInt(0, 9));
+                include("main-menu.js");
             } catch (e) {
-                log("ERROR during exit: " + e.message);
+                log("ERROR loading main-menu.js: " + e.message);
                 if (e.stack) log(e.stack);
             }
-
-            jsmaf.exit();
         } else if (currentButton < fileList.length) {
             var selectedFile = fileList[currentButton];
             var filePath = "/download0/payloads/" + selectedFile;
