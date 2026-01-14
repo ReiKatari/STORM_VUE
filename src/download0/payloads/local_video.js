@@ -40,9 +40,9 @@
     var O_RDONLY = 0;
 
     // ===== VIDEO CONFIGURATION =====
-    var VIDEO_DIR = '/download0/vid/rickroll';
-    var PLAYLIST_FILE = 'rickroll.m3u8';
-    var SEGMENT_FILES = ['rickroll0.ts', 'rickroll1.ts', 'rickroll2.ts', 'rickroll3.ts', 'rickroll4.ts', 'rickroll5.ts', 'rickroll6.ts', 'rickroll7.ts', 'rickroll8.ts', 'rickroll9.ts', 'rickroll10.ts', 'rickroll11.ts', 'rickroll12.ts', 'rickroll13.ts', 'rickroll14.ts', 'rickroll15.ts', 'rickroll16.ts', 'rickroll17.ts', 'rickroll18.ts', 'rickroll19.ts', 'rickroll20.ts', 'rickroll21.ts'];
+    var VIDEO_DIR = '/download0/vid';
+    var PLAYLIST_FILE = 'cat-meow.m3u8';
+    var SEGMENT_FILES = ['cat-meow0.ts'];
     // ================================
 
     // Create server socket
