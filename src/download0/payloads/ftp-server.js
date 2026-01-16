@@ -1,28 +1,17 @@
-// Full-Featured FTP Server for PS4
-// Opens on port 42069
-
-include('userland.js')
+if (typeof libc_addr === 'undefined') {
+    include('userland.js')
+}
 
 jsmaf.remotePlay = true
 
-// ============================================================================
-// Configuration
-// ============================================================================
-
 var FTP_PORT = 0
-var FTP_ROOT = '/'  // Root filesystem
+var FTP_ROOT = '/'
 var MAX_CLIENTS = 4
 var PASV_PORT_MIN = 50000
 var PASV_PORT_MAX = 50100
 
-// ============================================================================
-// Register FTP syscalls
-// ============================================================================
-
-// Basic I/O syscalls
 try { fn.register(3, 'read', 'bigint') } catch(e) {}
-
-// Socket syscalls (correct numbers from constants.py)
+try { fn.register(6, 'close', 'bigint') } catch(e) {}
 try { fn.register(97, 'socket', 'bigint') } catch(e) {}
 try { fn.register(104, 'bind', 'bigint') } catch(e) {}
 try { fn.register(105, 'setsockopt', 'bigint') } catch(e) {}
@@ -30,8 +19,6 @@ try { fn.register(106, 'listen', 'bigint') } catch(e) {}
 try { fn.register(30, 'accept', 'bigint') } catch(e) {}
 try { fn.register(32, 'getsockname', 'bigint') } catch(e) {}
 try { fn.register(98, 'connect', 'bigint') } catch(e) {}
-
-// File syscalls
 try { fn.register(0xBC, 'stat', 'bigint') } catch(e) {}
 try { fn.register(0x0A, 'unlink', 'bigint') } catch(e) {}
 try { fn.register(0x80, 'rename', 'bigint') } catch(e) {}
@@ -39,8 +26,6 @@ try { fn.register(0x88, 'mkdir', 'bigint') } catch(e) {}
 try { fn.register(0x89, 'rmdir', 'bigint') } catch(e) {}
 try { fn.register(0x110, 'getdents', 'bigint') } catch(e) {}
 try { fn.register(0x1DE, 'lseek', 'bigint') } catch(e) {}
-
-// Use registered syscalls
 var read_sys = fn.read
 var write_sys = fn.write
 var close_sys = fn.close
@@ -60,16 +45,16 @@ var lseek_sys = fn.lseek
 
 var listen_sys = fn.listen
 
-// ============================================================================
-// Socket constants
-// ============================================================================
+
+
+
 
 var AF_INET = 2
 var SOCK_STREAM = 1
 var SOL_SOCKET = 0xFFFF
 var SO_REUSEADDR = 0x4
 
-// File constants
+
 var O_RDONLY = 0x0000
 var O_WRONLY = 0x0001
 var O_RDWR = 0x0002
@@ -80,16 +65,57 @@ var S_IFMT = 0xF000
 var S_IFDIR = 0x4000
 var S_IFREG = 0x8000
 
-// ============================================================================
-// Global state
-// ============================================================================
+
+
+
 
 var current_pasv_port = PASV_PORT_MIN
 var rename_from = null
 
-// ============================================================================
-// Helper functions
-// ============================================================================
+function get_local_ip() {
+  try {
+    var SOCK_DGRAM = 2
+    var udp_fd = socket_sys(AF_INET, SOCK_DGRAM, 0)
+
+    if (udp_fd instanceof BigInt) {
+      udp_fd = udp_fd.lo
+    }
+
+    if (udp_fd < 0) {
+      return '0.0.0.0'
+    }
+
+    var remote_addr = mem.malloc(16)
+    mem.view(remote_addr).setUint8(1, AF_INET)
+    mem.view(remote_addr).setUint16(2, htons(53), false)
+    mem.view(remote_addr).setUint32(4, 0x08080808, false)
+
+    connect_sys(udp_fd, remote_addr, 16)
+
+    var local_addr = mem.malloc(16)
+    var addrlen = mem.malloc(4)
+    mem.view(addrlen).setUint32(0, 16, true)
+
+    var ret = getsockname_sys(udp_fd, local_addr, addrlen)
+
+    close_sys(udp_fd)
+
+    if (!ret || ret === 0 || (ret instanceof BigInt && ret.eq(new BigInt(0, 0)))) {
+      var ip_addr = mem.view(local_addr).getUint32(4, false)
+      var ip_bytes = [
+        (ip_addr >> 24) & 0xFF,
+        (ip_addr >> 16) & 0xFF,
+        (ip_addr >> 8) & 0xFF,
+        ip_addr & 0xFF
+      ]
+      return ip_bytes[0] + '.' + ip_bytes[1] + '.' + ip_bytes[2] + '.' + ip_bytes[3]
+    }
+
+    return '0.0.0.0'
+  } catch (e) {
+    return '0.0.0.0'
+  }
+}
 
 function aton(ip_str) {
   var parts = ip_str.split('.')
@@ -143,7 +169,7 @@ function read_line(client_fd) {
     var ret = read_sys(client_fd, buf.add(new BigInt(0, total)), 1)
 
     if (ret instanceof BigInt) {
-      if (ret.eq(BigInt.Zero) || ret.eq(new BigInt(0xFFFFFFFF, 0xFFFFFFFF))) {
+      if (ret.eq(new BigInt(0, 0)) || ret.eq(new BigInt(0xFFFFFFFF, 0xFFFFFFFF))) {
         break
       }
       ret = ret.lo
@@ -154,8 +180,8 @@ function read_line(client_fd) {
     var ch = mem.view(buf).getUint8(total)
     total++
 
-    if (ch === 10) break  // LF
-    if (ch !== 13) {  // Skip CR
+    if (ch === 10) break
+    if (ch !== 13) {
       line += String.fromCharCode(ch)
     }
   }
@@ -192,9 +218,9 @@ function format_file_mode(mode) {
   return str
 }
 
-// ============================================================================
-// PASV mode support
-// ============================================================================
+
+
+
 
 function create_pasv_socket() {
   var data_fd = new_tcp_socket()
@@ -203,11 +229,11 @@ function create_pasv_socket() {
   mem.view(enable).setUint32(0, 1, true)
   setsockopt_sys(data_fd, SOL_SOCKET, SO_REUSEADDR, enable, 4)
 
-  // Use port 0 to let OS assign a free ephemeral port
+
   var data_addr = mem.malloc(16)
   mem.view(data_addr).setUint8(1, AF_INET)
-  mem.view(data_addr).setUint16(2, 0, false)  // port 0 = OS assigns
-  mem.view(data_addr).setUint32(4, 0, false)  // INADDR_ANY
+  mem.view(data_addr).setUint16(2, 0, false)
+  mem.view(data_addr).setUint32(4, 0, false)
 
   var ret = bind_sys(data_fd, data_addr, 16)
   if (ret instanceof BigInt && ret.lo !== 0 && ret.hi !== 0xFFFFFFFF) {
@@ -221,7 +247,7 @@ function create_pasv_socket() {
     return null
   }
 
-  // Get the actual port assigned by OS using getsockname
+
   var actual_addr = mem.malloc(16)
   var addrlen = mem.malloc(4)
   mem.view(addrlen).setUint32(0, 16, true)
@@ -232,7 +258,7 @@ function create_pasv_socket() {
     return null
   }
 
-  // Read port in network byte order (big-endian)
+
   var actual_port = mem.view(actual_addr).getUint16(2, false)
 
   return { fd: data_fd, port: actual_port }
@@ -249,9 +275,9 @@ function accept_data_connection(pasv_fd) {
   return client_fd
 }
 
-// ============================================================================
-// FTP command handlers
-// ============================================================================
+
+
+
 
 function handle_user(client_fd, args, state) {
   send_response(client_fd, '331', 'Username OK, any password accepted')
@@ -275,7 +301,7 @@ function handle_cwd(client_fd, args, state) {
     return
   }
 
-  // Handle special cases
+
   if (args === '/') {
     state.cwd = '/'
     send_response(client_fd, '250', 'Requested file action okay, completed')
@@ -283,7 +309,7 @@ function handle_cwd(client_fd, args, state) {
   }
 
   if (args === '..') {
-    // Go up one directory
+
     if (state.cwd === '/') {
       send_response(client_fd, '250', 'Requested file action okay, completed')
     } else {
@@ -298,7 +324,7 @@ function handle_cwd(client_fd, args, state) {
     return
   }
 
-  // Build new path (absolute vs relative)
+
   var new_path
   if (args.charAt(0) === '/') {
     new_path = args
@@ -310,7 +336,7 @@ function handle_cwd(client_fd, args, state) {
     }
   }
 
-  // Test if directory exists by trying to open it
+
   var path_str = mem.malloc(new_path.length + 1)
   for (var i = 0; i < new_path.length; i++) {
     mem.view(path_str).setUint8(i, new_path.charCodeAt(i))
@@ -323,17 +349,17 @@ function handle_cwd(client_fd, args, state) {
   }
 
   if (fd < 0) {
-    // Path doesn't exist - check if it looks like a file path
+
     var last_slash = new_path.lastIndexOf('/')
     if (last_slash > 0) {
       var filename = new_path.substring(last_slash + 1)
-      // If it has an extension or looks like a file, navigate to parent dir instead
+
       if (filename.indexOf('.') > 0 || filename.length > 0) {
         var parent_dir = new_path.substring(0, last_slash)
         if (parent_dir === '') parent_dir = '/'
 
 
-        // Try parent directory
+
         var parent_str = mem.malloc(parent_dir.length + 1)
         for (var i = 0; i < parent_dir.length; i++) {
           mem.view(parent_str).setUint8(i, parent_dir.charCodeAt(i))
@@ -382,7 +408,7 @@ function handle_pasv(client_fd, args, state) {
   state.pasv_fd = pasv.fd
   state.pasv_port = pasv.port
 
-  // Get the server's local IP from the control connection
+
   var local_addr = mem.malloc(16)
   var addrlen = mem.malloc(4)
   mem.view(addrlen).setUint32(0, 16, true)
@@ -390,15 +416,15 @@ function handle_pasv(client_fd, args, state) {
   var ret = getsockname_sys(client_fd, local_addr, addrlen)
 
   var ip_bytes = [0, 0, 0, 0]
-  if (!ret || (ret instanceof BigInt && ret.eq(BigInt.Zero))) {
-    // Read IP address in network byte order (big-endian) at offset 4
-    var ip_addr = mem.view(local_addr).getUint32(4, false)  // big-endian
+  if (!ret || (ret instanceof BigInt && ret.eq(new BigInt(0, 0)))) {
+
+    var ip_addr = mem.view(local_addr).getUint32(4, false)
     ip_bytes[0] = (ip_addr >> 24) & 0xFF
     ip_bytes[1] = (ip_addr >> 16) & 0xFF
     ip_bytes[2] = (ip_addr >> 8) & 0xFF
     ip_bytes[3] = ip_addr & 0xFF
   } else {
-    // Fallback to localhost if getsockname fails
+
     ip_bytes = [127, 0, 0, 1]
   }
 
@@ -414,7 +440,7 @@ function handle_list(client_fd, args, state) {
     return
   }
 
-  // Ignore flags like -a, -l, etc. and just list current directory
+
   var path = state.cwd === '/' ? '/' : state.cwd
 
   send_response(client_fd, '150', 'Opening ASCII mode data connection for file list')
@@ -427,7 +453,7 @@ function handle_list(client_fd, args, state) {
     return
   }
 
-  // Open directory
+
   var path_str = mem.malloc(path.length + 1)
   for (var i = 0; i < path.length; i++) {
     mem.view(path_str).setUint8(i, path.charCodeAt(i))
@@ -613,7 +639,7 @@ function handle_dele(client_fd, args, state) {
   mem.view(path_str).setUint8(path.length, 0)
 
   var ret = unlink_sys(path_str)
-  if (ret instanceof BigInt && ret.eq(BigInt.Zero)) {
+  if (ret instanceof BigInt && ret.eq(new BigInt(0, 0))) {
     send_response(client_fd, '250', 'File deleted')
   } else {
     send_response(client_fd, '550', 'Delete failed')
@@ -629,8 +655,8 @@ function handle_mkd(client_fd, args, state) {
   }
   mem.view(path_str).setUint8(path.length, 0)
 
-  var ret = mkdir_sys(path_str, 0x1FF)  // 0777
-  if (ret instanceof BigInt && ret.eq(BigInt.Zero)) {
+  var ret = mkdir_sys(path_str, 0x1FF)
+  if (ret instanceof BigInt && ret.eq(new BigInt(0, 0))) {
     send_response(client_fd, '257', '"' + path + '" directory created')
   } else {
     send_response(client_fd, '550', 'Create directory failed')
@@ -647,7 +673,7 @@ function handle_rmd(client_fd, args, state) {
   mem.view(path_str).setUint8(path.length, 0)
 
   var ret = rmdir_sys(path_str)
-  if (ret instanceof BigInt && ret.eq(BigInt.Zero)) {
+  if (ret instanceof BigInt && ret.eq(new BigInt(0, 0))) {
     send_response(client_fd, '250', 'Directory removed')
   } else {
     send_response(client_fd, '550', 'Remove directory failed')
@@ -680,7 +706,7 @@ function handle_rnto(client_fd, args, state) {
   mem.view(to_str).setUint8(path_to.length, 0)
 
   var ret = rename_sys(from_str, to_str)
-  if (ret instanceof BigInt && ret.eq(BigInt.Zero)) {
+  if (ret instanceof BigInt && ret.eq(new BigInt(0, 0))) {
     send_response(client_fd, '250', 'Rename successful')
   } else {
     send_response(client_fd, '550', 'Rename failed')
@@ -698,11 +724,11 @@ function handle_size(client_fd, args, state) {
   }
   mem.view(path_str).setUint8(path.length, 0)
 
-  var statbuf = mem.malloc(144)  // sizeof(struct stat)
+  var statbuf = mem.malloc(144)
   var ret = stat_sys(path_str, statbuf)
 
-  if (ret instanceof BigInt && ret.eq(BigInt.Zero)) {
-    var size = mem.view(statbuf).getBigInt(48, true)  // st_size offset
+  if (ret instanceof BigInt && ret.eq(new BigInt(0, 0))) {
+    var size = mem.view(statbuf).getBigInt(48, true)
     send_response(client_fd, '213', size.toString())
   } else {
     send_response(client_fd, '550', 'Could not get file size')
@@ -783,7 +809,6 @@ function handle_client(client_fd, client_num) {
     }
 
   } catch (e) {
-    // Silent error handling
   } finally {
     if (state.pasv_fd >= 0) {
       close_sys(state.pasv_fd)
@@ -792,33 +817,33 @@ function handle_client(client_fd, client_num) {
   }
 }
 
-// ============================================================================
-// Main FTP server
-// ============================================================================
+
+
+
 
 function start_ftp_server() {
   try {
-    // Create server socket
+
     var server_fd = new_tcp_socket()
 
-    // Set SO_REUSEADDR
+
     var enable = mem.malloc(4)
     mem.view(enable).setUint32(0, 1, true)
     setsockopt_sys(server_fd, SOL_SOCKET, SO_REUSEADDR, enable, 4)
 
-    // Bind to 0.0.0.0:42069
-    // struct sockaddr_in: family at offset 1, port at offset 2, addr at offset 4
+
+
     var server_addr = mem.malloc(16)
     mem.view(server_addr).setUint8(1, AF_INET)
-    mem.view(server_addr).setUint16(2, htons(FTP_PORT), false)  // network byte order
-    mem.view(server_addr).setUint32(4, 0, false)  // INADDR_ANY (0.0.0.0)
+    mem.view(server_addr).setUint16(2, htons(FTP_PORT), false)
+    mem.view(server_addr).setUint32(4, 0, false)
 
     var ret = bind_sys(server_fd, server_addr, 16)
     if (ret instanceof BigInt && ret.lo !== 0 && ret.hi !== 0xFFFFFFFF) {
       throw new Error('bind() failed')
     }
 
-    // Get the actual port that was bound using getsockname
+
     var actual_addr = mem.malloc(16)
     var addrlen = mem.malloc(4)
     mem.view(addrlen).setUint32(0, 16, true)
@@ -828,29 +853,21 @@ function start_ftp_server() {
       throw new Error('getsockname() failed')
     }
 
-    // Read port in network byte order (big-endian) at offset 2
-    var actual_port = mem.view(actual_addr).getUint16(2, false)  // big-endian
 
-    // Listen
+    var actual_port = mem.view(actual_addr).getUint16(2, false)
+
+
     ret = listen_sys(server_fd, MAX_CLIENTS)
     if (ret instanceof BigInt && ret.lo !== 0 && ret.hi !== 0xFFFFFFFF) {
       throw new Error('listen() failed')
     }
 
-    // Get server IP from sockaddr
-    var ip_addr = mem.view(actual_addr).getUint32(4, false)  // big-endian at offset 4
-    var ip_bytes = [
-      (ip_addr >> 24) & 0xFF,
-      (ip_addr >> 16) & 0xFF,
-      (ip_addr >> 8) & 0xFF,
-      ip_addr & 0xFF
-    ]
-    var ip_str = ip_bytes[0] + '.' + ip_bytes[1] + '.' + ip_bytes[2] + '.' + ip_bytes[3]
+    var ip_str = get_local_ip()
 
-    // Send notification with IP and port
-    utils.notify('FTP: ' + ip_str + ':' + actual_port)
+    log('[FTP] Server started: ftp://' + ip_str + ':' + actual_port)
+    utils.notify('FTP Server: ftp://' + ip_str + ':' + actual_port)
 
-    // Accept loop
+
     var client_num = 0
     while (true) {
       var client_ret = accept_sys(server_fd, 0, 0)
@@ -865,9 +882,9 @@ function start_ftp_server() {
     }
 
   } catch (e) {
-    utils.notify('FTP Error: ' + e.message)
+    log('[FTP] Error: ' + (e.stack || e.message || e))
   }
 }
 
-// Start the server
+
 start_ftp_server()
