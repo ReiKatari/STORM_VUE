@@ -8,10 +8,9 @@
 
 include('binloader.js')
 include('lapse.js')
-function show_success(){
-    
-        jsmaf.root.children.push(bg_success);
 
+function show_success(){
+        jsmaf.root.children.push(bg_success)
     }
 
 function isJailbroken() {
@@ -55,14 +54,8 @@ function isJailbroken() {
 
 var is_jailbroken = isJailbroken()
 
-// Check if lapse.js has completed successfully
-function is_lapse_complete() {
-
-
-    // Check if kernel object exists with read/write functions
-    if (typeof kernel === 'undefined' || !kernel.read_qword || !kernel.write_qword) {
-        return false;
-    }
+// Check if exploit has completed successfully
+function is_exploit_complete() {
 
     // Check if we're actually jailbroken
     if (typeof getuid !== 'undefined' && typeof is_in_sandbox !== 'undefined') {
@@ -82,22 +75,97 @@ function is_lapse_complete() {
 }
 
 
+function write8 (addr, val) {
+    mem.view(addr).setUint8(0, val&0xFF, true)
+}
+
+function write16 (addr, val) {
+    mem.view(addr).setUint16(0, val&0xFFFF, true)
+}
+
+function write32 (addr, val) {
+    mem.view(addr).setUint32(0, val&0xFFFFFFFF, true)
+}
+
+function write64 (addr, val) {
+    mem.view(addr).setBigInt(0, new BigInt(val), true)
+}
+
+function read8 (addr) {
+    return mem.view(addr).getUint8(0, true)
+}
+
+function read16 (addr) {
+    return mem.view(addr).getUint16(0, true)
+}
+
+function read32 (addr) {
+    return mem.view(addr).getUint32(0, true)
+}
+
+function read64 (addr) {
+    return mem.view(addr).getBigInt(0, true)
+}
+
+function malloc(size) {
+    return mem.malloc(size)
+}
+
+function hex(val) {
+    if (val instanceof BigInt)
+        return val.toString();
+    return '0x' + val.toString(16).padStart(2, '0');
+}
+
+function get_fwversion() {
+    const buf = malloc(0x8);
+    const size = malloc(0x8);
+    write64(size, 0x8);
+    if (sysctlbyname("kern.sdk_version", buf, size, 0, 0)) {
+        const byte1 = Number(read8(buf.add(2)));  // Minor version (first byte)
+        const byte2 = Number(read8(buf.add(3)));  // Major version (second byte)
+        
+        const version = byte2.toString(16) + '.' + byte1.toString(16).padStart(2, '0');
+        return version;
+    }
+    
+    return null;
+}
+
+FW_VERSION = get_fwversion()
+
+
+function compare_version(a, b) {
+            const a_arr = a.split('.');
+            const amaj = a_arr[0];
+            const amin = a_arr[1];
+            const b_arr = b.split('.');
+            const bmaj = b_arr[0];
+            const bmin = b_arr[1];
+            return amaj === bmaj ? amin - bmin : amaj - bmaj;
+}
+
 
 if(!is_jailbroken){
     
-    // Wait for lapse to complete, then load binloader
-log("Waiting for lapse.js to complete...");
+if (compare_version(FW_VERSION, "8.00") >= 0 || compare_version(FW_VERSION, "12.02") <= 0) {
+    utils.notify(FW_VERSION + ' Detected! ')
     lapse()
+}
+else if (compare_version(FW_VERSION, "12.52") >= 0 || compare_version(FW_VERSION, "13.00") <= 0){
+    utils.notify(FW_VERSION + ' Detected! \xF0\x9F\xA5\xB2')
+    include('netctrl_c0w_twins.js')
+}
 
 var start_time = Date.now();
 var max_wait_seconds = 5;
 var max_wait_ms = max_wait_seconds * 1000;
 
-while (!is_lapse_complete()) {
+while (!is_exploit_complete()) {
     var elapsed = Date.now() - start_time;
 
     if (elapsed > max_wait_ms) {
-        log("ERROR: Timeout waiting for lapse.js to complete (" + max_wait_seconds + " seconds)");
+        log("ERROR: Timeout waiting for exploit to complete (" + max_wait_seconds + " seconds)");
         throw new Error("Lapse timeout");
     }
 
@@ -109,7 +177,7 @@ while (!is_lapse_complete()) {
 }
 show_success();
 var total_wait = ((Date.now() - start_time) / 1000).toFixed(1);
-log("Lapse completed successfully after " + total_wait + " seconds");
+log("Exploit completed successfully after " + total_wait + " seconds");
 
 }else {
     utils.notify('Already Jailbroken!')
