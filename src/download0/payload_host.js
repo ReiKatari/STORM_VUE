@@ -6,6 +6,10 @@
     } else {
         log("userland.js already loaded (libc_addr defined)");
     }
+    
+    var audio = new jsmaf.AudioClip()
+    audio.volume = 0.5  // 50% volume
+    audio.open('file://../download0/sfx/bgm.wav')
 
     function isJailbroken() {
         try { fn.register(24, 'getuid', 'bigint') } catch(e) {}
@@ -347,12 +351,6 @@
                     log("Including JavaScript file: " + selectedFile);
                     include("payloads/" + selectedFile);
                 } else {
-                    if (!is_jailbroken) {
-                        log("Not jailbroken, running lapse.js first...");
-                        include("lapse.js");
-                        lapse();
-                        log("lapse.js completed");
-                    }
 
                     log("Loading binloader.js...");
                     include("binloader.js");

@@ -10,6 +10,12 @@
     var selectedButtonImg = "file:///assets/img/button_over_9.png";
 
     jsmaf.root.children.length = 0;
+    
+    var audio = new jsmaf.AudioClip()
+    audio.volume = 0.5  // 50% volume
+    audio.open('file://../download0/sfx/bgm.wav')
+
+
 
     var background = new Image({
         url: "file:///../download0/img/multiview_bg_VAF.png",
