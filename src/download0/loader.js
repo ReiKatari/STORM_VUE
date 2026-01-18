@@ -12,6 +12,10 @@ include('lapse.js')
 function show_success(){
         jsmaf.root.children.push(bg_success)
     }
+    
+var audio = new jsmaf.AudioClip()
+audio.volume = 0.5  // 50% volume
+audio.open('file://../download0/sfx/bgm.wav')
 
 function isJailbroken() {
   // Register syscalls
