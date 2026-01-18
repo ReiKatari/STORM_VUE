@@ -1,5 +1,10 @@
 // Statistics tracker using syscalls for direct file I/O
 
+if (typeof libc_addr === 'undefined') {
+    include('userland.js')
+}
+
+
 // Register read syscall if not already registered
 try {
     if (!fn.read) {
