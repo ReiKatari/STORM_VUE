@@ -161,11 +161,13 @@ if(!is_jailbroken){
     
 if (compare_version(FW_VERSION, "8.00") >= 0 || compare_version(FW_VERSION, "12.02") <= 0) {
     utils.notify(FW_VERSION + ' Detected! ')
-    //lapse()
+    
     // Increment total attempts
     stats.incrementTotal()
-
-    include('netctrl_c0w_twins.js')
+    lapse()
+    
+    //uncomment to test netctrl
+    //include('netctrl_c0w_twins.js') 
 }
 else if (compare_version(FW_VERSION, "12.52") >= 0 || compare_version(FW_VERSION, "13.00") <= 0){
     utils.notify(FW_VERSION + ' Detected! \xF0\x9F\xA5\xB2')
