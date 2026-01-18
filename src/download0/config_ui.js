@@ -70,32 +70,32 @@
     jsmaf.root.children.push(title);
     
     
-      // Include the stats tracker
+    // Include the stats tracker
     include('stats-tracker.js')
 
-    // Load stats and display them
-    stats.load(function() {
+    // Load and display stats
+    stats.load()
     var statsData = stats.get()
 
     // Create text elements for each stat
     var statsToDisplay = [
-      'Total Attempts: ' + statsData.total,
-      'Successes: ' + statsData.success,
-      'Failures: ' + (stats.total - stats.success),
-      'Success Rate: ' + statsData.successRate,
-      'Failure Rate: ' + statsData.failureRate
+        'Total Attempts: ' + statsData.total,
+        'Successes: ' + statsData.success,
+        'Failures: ' + statsData.failures,
+        'Success Rate: ' + statsData.successRate,
+        'Failure Rate: ' + statsData.failureRate
     ]
 
     // Display each stat line
     for (var i = 0; i < statsToDisplay.length; i++) {
-      var lineText = new jsmaf.Text()
-      lineText.text = statsToDisplay[i]
-      lineText.background = '#FFFFFF'
-      lineText.x = 20
-      lineText.y = 120 + (i * 20)
-      jsmaf.root.children.push(lineText)
+        var lineText = new jsmaf.Text()
+        lineText.text = statsToDisplay[i]
+        lineText.background = '#FFFFFF'
+        lineText.x = 20
+        lineText.y = 120 + (i * 20)
+        jsmaf.root.children.push(lineText)
     }
-    })
+
 
 
     var configOptions = [

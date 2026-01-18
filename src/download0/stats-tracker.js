@@ -1,62 +1,111 @@
-// Statistics tracker using file-based storage
+// Statistics tracker using syscalls for direct file I/O
+
+// Register read syscall if not already registered
+try {
+    if (!fn.read) {
+        fn.register(0x3, 'read', 'bigint')
+    }
+} catch(e) {
+    // Already registered
+}
 
 var stats = {
     total: 0,
     success: 0,
-    filename: 'stats.json',
+    filepath: '/download0/stats.json',
 
-    // Load stats from file
-    load: function(callback) {
-        var self = this;
-        fs.read(this.filename, function(err, data) {
-            if (!err && data) {
-                try {
-                    var parsed = JSON.parse(data);
-                    self.total = parsed.total || 0;
-                    self.success = parsed.success || 0;
-                    log('[STATS] Loaded: total=' + self.total + ', success=' + self.success);
-                } catch (e) {
-                    log('[STATS] Failed to parse stats file, starting fresh');
-                    self.total = 0;
-                    self.success = 0;
-                }
-            } else {
-                log('[STATS] No stats file found, starting fresh');
-                self.total = 0;
-                self.success = 0;
+    // Load stats from file using syscalls
+    load: function() {
+        try {
+            var fd = fn.open(this.filepath, 0, 0)  // O_RDONLY
+            if (fd.lt(0)) {
+                log('[STATS] No stats file found, starting fresh')
+                this.total = 0
+                this.success = 0
+                return
             }
-            if (callback) callback();
-        });
+
+            // Read file content
+            var buf = mem.malloc(1024)
+            var bytesRead = fn.read(fd, buf, 1024)
+            fn.close(fd)
+
+            if (bytesRead.gt(0)) {
+                // Convert buffer to string
+                var str = ''
+                for (var i = 0; i < Number(bytesRead); i++) {
+                    str += String.fromCharCode(mem.view(buf.add(i)).getUint8(0, true))
+                }
+
+                try {
+                    var parsed = JSON.parse(str)
+                    this.total = parsed.total || 0
+                    this.success = parsed.success || 0
+                    log('[STATS] Loaded: total=' + this.total + ', success=' + this.success)
+                } catch (e) {
+                    log('[STATS] Failed to parse stats file: ' + e)
+                    this.total = 0
+                    this.success = 0
+                }
+            }
+        } catch (e) {
+            log('[STATS] Error loading stats: ' + e)
+            this.total = 0
+            this.success = 0
+        }
     },
 
-    // Save stats to file
-    save: function(callback) {
-        var data = JSON.stringify({
-            total: this.total,
-            success: this.success
-        });
-        fs.write(this.filename, data, function(err) {
-            if (err) {
-                log('[STATS] Failed to save stats: ' + err);
-            } else {
-                log('[STATS] Saved: total=' + stats.total + ', success=' + stats.success);
+    // Save stats to file using syscalls
+    save: function() {
+        try {
+            var data = JSON.stringify({
+                total: this.total,
+                success: this.success
+            })
+
+            // Open file for writing (O_WRONLY | O_CREAT | O_TRUNC)
+            // O_WRONLY = 1, O_CREAT = 0x200, O_TRUNC = 0x400
+            var fd = fn.open(this.filepath, 0x601, 0x1FF)  // 0x1FF = 0777 permissions
+
+            if (fd.lt(0)) {
+                log('[STATS] Failed to open file for writing')
+                return false
             }
-            if (callback) callback(err);
-        });
+
+            // Write data to file
+            var buf = mem.malloc(data.length)
+            for (var i = 0; i < data.length; i++) {
+                mem.view(buf.add(i)).setUint8(0, data.charCodeAt(i), true)
+            }
+
+            var bytesWritten = fn.write(fd, buf, data.length)
+            fn.close(fd)
+
+            if (bytesWritten.eq(data.length)) {
+                log('[STATS] Saved: total=' + this.total + ', success=' + this.success)
+                return true
+            } else {
+                log('[STATS] Failed to write all data')
+                return false
+            }
+        } catch (e) {
+            log('[STATS] Error saving stats: ' + e)
+            return false
+        }
     },
 
     // Increment total counter
-    incrementTotal: function(callback) {
-        this.total++;
-        log('[STATS] Total incremented to: ' + this.total);
-        this.save(callback);
+    incrementTotal: function() {
+        this.total++
+        log('[STATS] Total incremented to: ' + this.total)
+        this.save()
     },
 
     // Increment success counter
-    incrementSuccess: function(callback) {
-        this.success++;
-        log('[STATS] Success incremented to: ' + this.success);
-        this.save(callback);
+    incrementSuccess: function() {
+        this.success++
+        log('[STATS] Success incremented to: ' + this.success)
+        this.save()
     },
 
     // Get current stats
@@ -64,35 +113,35 @@ var stats = {
         return {
             total: this.total,
             success: this.success,
+            failures: this.total - this.success,
             failureRate: this.total > 0 ? ((this.total - this.success) / this.total * 100).toFixed(2) + '%' : '0%',
             successRate: this.total > 0 ? (this.success / this.total * 100).toFixed(2) + '%' : '0%'
-        };
+        }
     },
 
     // Print current stats
     print: function() {
-        var current = this.get();
-        log('[STATS] ====== Statistics ======');
-        log('[STATS] Total:        ' + current.total);
-        log('[STATS] Success:      ' + current.success);
-        log('[STATS] Failures:     ' + (this.total - this.success));
-        log('[STATS] Success Rate: ' + current.successRate);
-        log('[STATS] Failure Rate: ' + current.failureRate);
-        log('[STATS] =======================');
+        var current = this.get()
+        log('[STATS] ====== Statistics ======')
+        log('[STATS] Total:        ' + current.total)
+        log('[STATS] Success:      ' + current.success)
+        log('[STATS] Failures:     ' + current.failures)
+        log('[STATS] Success Rate: ' + current.successRate)
+        log('[STATS] Failure Rate: ' + current.failureRate)
+        log('[STATS] =======================')
     },
 
     // Reset stats
-    reset: function(callback) {
-        this.total = 0;
-        this.success = 0;
-        log('[STATS] Stats reset');
-        this.save(callback);
+    reset: function() {
+        this.total = 0
+        this.success = 0
+        log('[STATS] Stats reset')
+        this.save()
     }
-};
+}
 
 // Example usage:
-// stats.load(function() {
-//     stats.incrementTotal();
-//     stats.incrementSuccess();
-//     stats.print();
-// });
+// stats.load()
+// stats.incrementTotal()
+// stats.incrementSuccess()
+// stats.print()
