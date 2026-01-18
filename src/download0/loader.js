@@ -2,15 +2,19 @@
 
 // Now load userland and lapse
     // Check if libc_addr is defined
-    if (typeof libc_addr === 'undefined') {
-        include('userland.js')
-    }
-
+if (typeof libc_addr === 'undefined') {
+    include('userland.js')
+}
+include('stats-tracker.js')
 include('binloader.js')
 include('lapse.js')
 
 function show_success(){
         jsmaf.root.children.push(bg_success)
+        log("logging stats...")
+        stats.load(function() {
+            stats.incrementSuccess()
+        })
     }
     
 var audio = new jsmaf.AudioClip()
@@ -158,6 +162,12 @@ if (compare_version(FW_VERSION, "8.00") >= 0 || compare_version(FW_VERSION, "12.
 }
 else if (compare_version(FW_VERSION, "12.52") >= 0 || compare_version(FW_VERSION, "13.00") <= 0){
     utils.notify(FW_VERSION + ' Detected! \xF0\x9F\xA5\xB2')
+
+    // Increment total attempts
+    stats.load(function() {
+        stats.incrementTotal()
+    })
+
     include('netctrl_c0w_twins.js')
 }
 
@@ -195,6 +205,9 @@ try {
     binloader_init();
     log("Binloader initialized and running!");
     log("Starting AIO FIX...");
+    
+
+
 } catch(e) {
     log("ERROR: Failed to initialize binloader");
     log("Error message: " + e.message);
