@@ -1,3 +1,8 @@
+
+if (typeof libc_addr === 'undefined') {
+    include('userland.js')
+}
+
 (function() {
     log("Loading config UI...");
 
