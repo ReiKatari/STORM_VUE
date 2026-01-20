@@ -1,10 +1,5 @@
 // Statistics tracker using syscalls for direct file I/O
 
-if (typeof libc_addr === 'undefined') {
-    include('userland.js')
-}
-
-
 // Register read syscall if not already registered
 try {
     if (!fn.read) {
@@ -14,11 +9,51 @@ try {
     // Already registered
 }
 
+
+function isJailbroken() {
+  // Register syscalls
+  try { fn.register(24, 'getuid', 'bigint') } catch(e) {}
+  try { fn.register(23, 'setuid', 'bigint') } catch(e) {}
+
+  // Get current UID
+  var uid_before = fn.getuid()
+  var uid_before_val = (uid_before instanceof BigInt) ? uid_before.lo : uid_before
+  log('UID before setuid: ' + uid_before_val)
+
+  // Try to set UID to 0 (root) - catch EPERM if not jailbroken
+  log('Attempting setuid(0)...')
+  var setuid_success = false
+  var error_msg = null
+
+  try {
+    var setuid_result = fn.setuid(0)
+    var setuid_ret = (setuid_result instanceof BigInt) ? setuid_result.lo : setuid_result
+    log('setuid returned: ' + setuid_ret)
+    setuid_success = (setuid_ret === 0)
+  } catch(e) {
+    error_msg = e.toString()
+    log('setuid threw exception: ' + error_msg)
+  }
+
+  // Get UID after setuid attempt
+  var uid_after = fn.getuid()
+  var uid_after_val = (uid_after instanceof BigInt) ? uid_after.lo : uid_after
+  log('UID after setuid: ' + uid_after_val)
+
+  if (uid_after_val === 0) {
+    log('already jailbroken')
+    return true
+  } else {
+    log('not jailbroken')
+    return false
+  }
+}
+
 var stats = {
     total: 0,
     success: 0,
-    filepath: '/download0/stats.json',
-
+    filepath: isJailbroken() ? '/mnt/sandbox/download/CUSA00960/stats.json' : '/download0/stats.json' ,
+    
     // Load stats from file using syscalls
     load: function() {
         try {
@@ -63,11 +98,14 @@ var stats = {
     // Save stats to file using syscalls
     save: function() {
         try {
+            
+            this.filepath = isJailbroken() ? '/mnt/sandbox/download/CUSA00960/stats.json' : '/download0/stats.json'
+            
             var data = JSON.stringify({
                 total: this.total,
                 success: this.success
             })
-
+    
             // Open file for writing (O_WRONLY | O_CREAT | O_TRUNC)
             // O_WRONLY = 1, O_CREAT = 0x200, O_TRUNC = 0x400
             var fd = fn.open(this.filepath, 0x601, 0x1FF)  // 0x1FF = 0777 permissions
