@@ -52,7 +52,7 @@ function isJailbroken() {
 var stats = {
     total: 0,
     success: 0,
-    filepath: isJailbroken() ? '/mnt/sandbox/download/CUSA00960/stats.json' : '/download0/stats.json' ,
+    filepath: '/download0/stats.json' ,
     
     // Load stats from file using syscalls
     load: function() {
@@ -90,6 +90,7 @@ var stats = {
             }
         } catch (e) {
             log('[STATS] Error loading stats: ' + e)
+            log(e.stack)
             this.total = 0
             this.success = 0
         }
