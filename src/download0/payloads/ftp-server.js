@@ -1,5 +1,5 @@
 if (typeof libc_addr === 'undefined') {
-    include('userland.js')
+  include('userland.js')
 }
 
 jsmaf.remotePlay = true
@@ -10,22 +10,22 @@ var MAX_CLIENTS = 4
 var PASV_PORT_MIN = 50000
 var PASV_PORT_MAX = 50100
 
-try { fn.register(3, 'read', 'bigint') } catch(e) {}
-try { fn.register(6, 'close', 'bigint') } catch(e) {}
-try { fn.register(97, 'socket', 'bigint') } catch(e) {}
-try { fn.register(104, 'bind', 'bigint') } catch(e) {}
-try { fn.register(105, 'setsockopt', 'bigint') } catch(e) {}
-try { fn.register(106, 'listen', 'bigint') } catch(e) {}
-try { fn.register(30, 'accept', 'bigint') } catch(e) {}
-try { fn.register(32, 'getsockname', 'bigint') } catch(e) {}
-try { fn.register(98, 'connect', 'bigint') } catch(e) {}
-try { fn.register(0xBC, 'stat', 'bigint') } catch(e) {}
-try { fn.register(0x0A, 'unlink', 'bigint') } catch(e) {}
-try { fn.register(0x80, 'rename', 'bigint') } catch(e) {}
-try { fn.register(0x88, 'mkdir', 'bigint') } catch(e) {}
-try { fn.register(0x89, 'rmdir', 'bigint') } catch(e) {}
-try { fn.register(0x110, 'getdents', 'bigint') } catch(e) {}
-try { fn.register(0x1DE, 'lseek', 'bigint') } catch(e) {}
+try { fn.register(3, 'read', 'bigint') } catch (e) {}
+try { fn.register(6, 'close', 'bigint') } catch (e) {}
+try { fn.register(97, 'socket', 'bigint') } catch (e) {}
+try { fn.register(104, 'bind', 'bigint') } catch (e) {}
+try { fn.register(105, 'setsockopt', 'bigint') } catch (e) {}
+try { fn.register(106, 'listen', 'bigint') } catch (e) {}
+try { fn.register(30, 'accept', 'bigint') } catch (e) {}
+try { fn.register(32, 'getsockname', 'bigint') } catch (e) {}
+try { fn.register(98, 'connect', 'bigint') } catch (e) {}
+try { fn.register(0xBC, 'stat', 'bigint') } catch (e) {}
+try { fn.register(0x0A, 'unlink', 'bigint') } catch (e) {}
+try { fn.register(0x80, 'rename', 'bigint') } catch (e) {}
+try { fn.register(0x88, 'mkdir', 'bigint') } catch (e) {}
+try { fn.register(0x89, 'rmdir', 'bigint') } catch (e) {}
+try { fn.register(0x110, 'getdents', 'bigint') } catch (e) {}
+try { fn.register(0x1DE, 'lseek', 'bigint') } catch (e) {}
 var read_sys = fn.read
 var write_sys = fn.write
 var close_sys = fn.close
@@ -45,15 +45,10 @@ var lseek_sys = fn.lseek
 
 var listen_sys = fn.listen
 
-
-
-
-
 var AF_INET = 2
 var SOCK_STREAM = 1
 var SOL_SOCKET = 0xFFFF
 var SO_REUSEADDR = 0x4
-
 
 var O_RDONLY = 0x0000
 var O_WRONLY = 0x0001
@@ -65,14 +60,10 @@ var S_IFMT = 0xF000
 var S_IFDIR = 0x4000
 var S_IFREG = 0x8000
 
-
-
-
-
 var current_pasv_port = PASV_PORT_MIN
 var rename_from = null
 
-function get_local_ip() {
+function get_local_ip () {
   try {
     var SOCK_DGRAM = 2
     var udp_fd = socket_sys(AF_INET, SOCK_DGRAM, 0)
@@ -117,7 +108,7 @@ function get_local_ip() {
   }
 }
 
-function aton(ip_str) {
+function aton (ip_str) {
   var parts = ip_str.split('.')
   var result = 0
   result |= (parseInt(parts[0]) << 24)
@@ -127,11 +118,11 @@ function aton(ip_str) {
   return result
 }
 
-function htons(port) {
+function htons (port) {
   return ((port & 0xFF) << 8) | ((port >> 8) & 0xFF)
 }
 
-function new_tcp_socket() {
+function new_tcp_socket () {
   var sd = socket_sys(AF_INET, SOCK_STREAM, 0)
 
   if (sd instanceof BigInt) {
@@ -148,7 +139,7 @@ function new_tcp_socket() {
   return sd
 }
 
-function send_response(client_fd, code, message) {
+function send_response (client_fd, code, message) {
   var response = code + ' ' + message + '\r\n'
 
   var buf = mem.malloc(response.length + 1)
@@ -160,7 +151,7 @@ function send_response(client_fd, code, message) {
   write_sys(client_fd, buf, response.length)
 }
 
-function read_line(client_fd) {
+function read_line (client_fd) {
   var buf = mem.malloc(1024)
   var line = ''
   var total = 0
@@ -189,14 +180,14 @@ function read_line(client_fd) {
   return line
 }
 
-function build_path(base, path) {
+function build_path (base, path) {
   if (path.charAt(0) === '/') {
     return FTP_ROOT + path
   }
   return base + '/' + path
 }
 
-function format_file_mode(mode) {
+function format_file_mode (mode) {
   var str = ''
 
   if ((mode & S_IFMT) === S_IFDIR) {
@@ -218,17 +209,12 @@ function format_file_mode(mode) {
   return str
 }
 
-
-
-
-
-function create_pasv_socket() {
+function create_pasv_socket () {
   var data_fd = new_tcp_socket()
 
   var enable = mem.malloc(4)
   mem.view(enable).setUint32(0, 1, true)
   setsockopt_sys(data_fd, SOL_SOCKET, SO_REUSEADDR, enable, 4)
-
 
   var data_addr = mem.malloc(16)
   mem.view(data_addr).setUint8(1, AF_INET)
@@ -247,7 +233,6 @@ function create_pasv_socket() {
     return null
   }
 
-
   var actual_addr = mem.malloc(16)
   var addrlen = mem.malloc(4)
   mem.view(addrlen).setUint32(0, 16, true)
@@ -258,13 +243,12 @@ function create_pasv_socket() {
     return null
   }
 
-
   var actual_port = mem.view(actual_addr).getUint16(2, false)
 
   return { fd: data_fd, port: actual_port }
 }
 
-function accept_data_connection(pasv_fd) {
+function accept_data_connection (pasv_fd) {
   var client_ret = accept_sys(pasv_fd, 0, 0)
   var client_fd = client_ret instanceof BigInt ? client_ret.lo : client_ret
 
@@ -275,32 +259,27 @@ function accept_data_connection(pasv_fd) {
   return client_fd
 }
 
-
-
-
-
-function handle_user(client_fd, args, state) {
+function handle_user (client_fd, args, state) {
   send_response(client_fd, '331', 'Username OK, any password accepted')
 }
 
-function handle_pass(client_fd, args, state) {
+function handle_pass (client_fd, args, state) {
   send_response(client_fd, '230', 'Login successful')
 }
 
-function handle_syst(client_fd, args, state) {
+function handle_syst (client_fd, args, state) {
   send_response(client_fd, '215', 'UNIX Type: L8')
 }
 
-function handle_pwd(client_fd, args, state) {
+function handle_pwd (client_fd, args, state) {
   send_response(client_fd, '257', '"' + state.cwd + '" is current directory')
 }
 
-function handle_cwd(client_fd, args, state) {
+function handle_cwd (client_fd, args, state) {
   if (!args || args === '') {
     send_response(client_fd, '500', 'Syntax error, command unrecognized')
     return
   }
-
 
   if (args === '/') {
     state.cwd = '/'
@@ -309,7 +288,6 @@ function handle_cwd(client_fd, args, state) {
   }
 
   if (args === '..') {
-
     if (state.cwd === '/') {
       send_response(client_fd, '250', 'Requested file action okay, completed')
     } else {
@@ -324,7 +302,6 @@ function handle_cwd(client_fd, args, state) {
     return
   }
 
-
   var new_path
   if (args.charAt(0) === '/') {
     new_path = args
@@ -335,7 +312,6 @@ function handle_cwd(client_fd, args, state) {
       new_path = state.cwd + '/' + args
     }
   }
-
 
   var path_str = mem.malloc(new_path.length + 1)
   for (var i = 0; i < new_path.length; i++) {
@@ -349,7 +325,6 @@ function handle_cwd(client_fd, args, state) {
   }
 
   if (fd < 0) {
-
     var last_slash = new_path.lastIndexOf('/')
     if (last_slash > 0) {
       var filename = new_path.substring(last_slash + 1)
@@ -357,8 +332,6 @@ function handle_cwd(client_fd, args, state) {
       if (filename.indexOf('.') > 0 || filename.length > 0) {
         var parent_dir = new_path.substring(0, last_slash)
         if (parent_dir === '') parent_dir = '/'
-
-
 
         var parent_str = mem.malloc(parent_dir.length + 1)
         for (var i = 0; i < parent_dir.length; i++) {
@@ -389,16 +362,16 @@ function handle_cwd(client_fd, args, state) {
   send_response(client_fd, '250', 'Requested file action okay, completed')
 }
 
-function handle_cdup(client_fd, args, state) {
+function handle_cdup (client_fd, args, state) {
   handle_cwd(client_fd, '..', state)
 }
 
-function handle_type(client_fd, args, state) {
+function handle_type (client_fd, args, state) {
   state.type = args.toUpperCase()
   send_response(client_fd, '200', 'Type set to ' + state.type)
 }
 
-function handle_pasv(client_fd, args, state) {
+function handle_pasv (client_fd, args, state) {
   var pasv = create_pasv_socket()
   if (!pasv) {
     send_response(client_fd, '425', 'Cannot open passive connection')
@@ -408,7 +381,6 @@ function handle_pasv(client_fd, args, state) {
   state.pasv_fd = pasv.fd
   state.pasv_port = pasv.port
 
-
   var local_addr = mem.malloc(16)
   var addrlen = mem.malloc(4)
   mem.view(addrlen).setUint32(0, 16, true)
@@ -417,14 +389,12 @@ function handle_pasv(client_fd, args, state) {
 
   var ip_bytes = [0, 0, 0, 0]
   if (!ret || (ret instanceof BigInt && ret.eq(new BigInt(0, 0)))) {
-
     var ip_addr = mem.view(local_addr).getUint32(4, false)
     ip_bytes[0] = (ip_addr >> 24) & 0xFF
     ip_bytes[1] = (ip_addr >> 16) & 0xFF
     ip_bytes[2] = (ip_addr >> 8) & 0xFF
     ip_bytes[3] = ip_addr & 0xFF
   } else {
-
     ip_bytes = [127, 0, 0, 1]
   }
 
@@ -434,12 +404,11 @@ function handle_pasv(client_fd, args, state) {
   send_response(client_fd, '227', 'Entering Passive Mode (' + ip_bytes[0] + ',' + ip_bytes[1] + ',' + ip_bytes[2] + ',' + ip_bytes[3] + ',' + p1 + ',' + p2 + ')')
 }
 
-function handle_list(client_fd, args, state) {
+function handle_list (client_fd, args, state) {
   if (!state.pasv_fd || state.pasv_fd < 0) {
     send_response(client_fd, '425', 'Use PASV first')
     return
   }
-
 
   var path = state.cwd === '/' ? '/' : state.cwd
 
@@ -452,7 +421,6 @@ function handle_list(client_fd, args, state) {
     state.pasv_fd = -1
     return
   }
-
 
   var path_str = mem.malloc(path.length + 1)
   for (var i = 0; i < path.length; i++) {
@@ -511,7 +479,7 @@ function handle_list(client_fd, args, state) {
   send_response(client_fd, '226', 'Transfer complete')
 }
 
-function handle_retr(client_fd, args, state) {
+function handle_retr (client_fd, args, state) {
   if (!state.pasv_fd || state.pasv_fd < 0) {
     send_response(client_fd, '425', 'Use PASV first')
     return
@@ -570,7 +538,7 @@ function handle_retr(client_fd, args, state) {
   send_response(client_fd, '226', 'Transfer complete')
 }
 
-function handle_stor(client_fd, args, state) {
+function handle_stor (client_fd, args, state) {
   if (!state.pasv_fd || state.pasv_fd < 0) {
     send_response(client_fd, '425', 'Use PASV first')
     return
@@ -629,7 +597,7 @@ function handle_stor(client_fd, args, state) {
   send_response(client_fd, '226', 'Transfer complete')
 }
 
-function handle_dele(client_fd, args, state) {
+function handle_dele (client_fd, args, state) {
   var path = build_path(state.cwd, args)
 
   var path_str = mem.malloc(path.length + 1)
@@ -646,7 +614,7 @@ function handle_dele(client_fd, args, state) {
   }
 }
 
-function handle_mkd(client_fd, args, state) {
+function handle_mkd (client_fd, args, state) {
   var path = build_path(state.cwd, args)
 
   var path_str = mem.malloc(path.length + 1)
@@ -663,7 +631,7 @@ function handle_mkd(client_fd, args, state) {
   }
 }
 
-function handle_rmd(client_fd, args, state) {
+function handle_rmd (client_fd, args, state) {
   var path = build_path(state.cwd, args)
 
   var path_str = mem.malloc(path.length + 1)
@@ -680,12 +648,12 @@ function handle_rmd(client_fd, args, state) {
   }
 }
 
-function handle_rnfr(client_fd, args, state) {
+function handle_rnfr (client_fd, args, state) {
   state.rename_from = build_path(state.cwd, args)
   send_response(client_fd, '350', 'Ready for RNTO')
 }
 
-function handle_rnto(client_fd, args, state) {
+function handle_rnto (client_fd, args, state) {
   if (!state.rename_from) {
     send_response(client_fd, '503', 'Bad sequence of commands')
     return
@@ -715,7 +683,7 @@ function handle_rnto(client_fd, args, state) {
   state.rename_from = null
 }
 
-function handle_size(client_fd, args, state) {
+function handle_size (client_fd, args, state) {
   var path = build_path(state.cwd, args)
 
   var path_str = mem.malloc(path.length + 1)
@@ -735,15 +703,15 @@ function handle_size(client_fd, args, state) {
   }
 }
 
-function handle_quit(client_fd, args, state) {
+function handle_quit (client_fd, args, state) {
   send_response(client_fd, '221', 'Goodbye')
 }
 
-function handle_noop(client_fd, args, state) {
+function handle_noop (client_fd, args, state) {
   send_response(client_fd, '200', 'OK')
 }
 
-function handle_client(client_fd, client_num) {
+function handle_client (client_fd, client_num) {
   var state = {
     cwd: '/',
     type: 'A',
@@ -807,7 +775,6 @@ function handle_client(client_fd, client_num) {
         send_response(client_fd, '502', 'Command not implemented')
       }
     }
-
   } catch (e) {
   } finally {
     if (state.pasv_fd >= 0) {
@@ -817,21 +784,13 @@ function handle_client(client_fd, client_num) {
   }
 }
 
-
-
-
-
-function start_ftp_server() {
+function start_ftp_server () {
   try {
-
     var server_fd = new_tcp_socket()
-
 
     var enable = mem.malloc(4)
     mem.view(enable).setUint32(0, 1, true)
     setsockopt_sys(server_fd, SOL_SOCKET, SO_REUSEADDR, enable, 4)
-
-
 
     var server_addr = mem.malloc(16)
     mem.view(server_addr).setUint8(1, AF_INET)
@@ -843,7 +802,6 @@ function start_ftp_server() {
       throw new Error('bind() failed')
     }
 
-
     var actual_addr = mem.malloc(16)
     var addrlen = mem.malloc(4)
     mem.view(addrlen).setUint32(0, 16, true)
@@ -853,9 +811,7 @@ function start_ftp_server() {
       throw new Error('getsockname() failed')
     }
 
-
     var actual_port = mem.view(actual_addr).getUint16(2, false)
-
 
     ret = listen_sys(server_fd, MAX_CLIENTS)
     if (ret instanceof BigInt && ret.lo !== 0 && ret.hi !== 0xFFFFFFFF) {
@@ -866,7 +822,6 @@ function start_ftp_server() {
 
     log('[FTP] Server started: ftp://' + ip_str + ':' + actual_port)
     utils.notify('FTP Server: ftp://' + ip_str + ':' + actual_port)
-
 
     var client_num = 0
     while (true) {
@@ -880,11 +835,9 @@ function start_ftp_server() {
       client_num++
       handle_client(client_fd, client_num)
     }
-
   } catch (e) {
     log('[FTP] Error: ' + (e.stack || e.message || e))
   }
 }
-
 
 start_ftp_server()
