@@ -1397,7 +1397,7 @@ function new_evf (name, flags) {
 }
 
 function set_evf_flags (id, flags) {
-  let result = evf_clear(id, 0)
+  var result = evf_clear(id, 0)
   if (result.eq(new BigInt(0xFFFFFFFF, 0xFFFFFFFF))) {
     throw new Error('evf_clear error: ' + hex(result))
   }
