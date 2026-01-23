@@ -2931,4 +2931,3 @@ function cleanup_fail () {
   jsmaf.root.children.push(bg_fail)
   cleanup()
 }
-
