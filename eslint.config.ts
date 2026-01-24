@@ -37,6 +37,7 @@ export default defineConfig([
       'no-fallthrough': 'off',
       'no-new-native-nonconstructor': 'off', // we use our own BigInt
       'no-extend-native': 'off', // we extend native for better usage
+      'no-new': 'off',
 
       // TS duplicates
       '@typescript-eslint/no-unused-vars': 'off',

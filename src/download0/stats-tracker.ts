@@ -1,42 +1,34 @@
+import { fn, mem, BigInt } from 'download0/types'
+
 // Statistics tracker using syscalls for direct file I/O
 
 // Register read syscall if not already registered
-try {
-  if (!fn.read) {
-    fn.register(0x3, 'read', 'bigint')
-  }
-} catch (e) {
-  // Already registered
-}
 
 function isJailbroken () {
   // Register syscalls
-  try { fn.register(24, 'getuid', 'bigint') } catch (e) {}
-  try { fn.register(23, 'setuid', 'bigint') } catch (e) {}
+  fn.register(24, 'getuid', [], 'bigint')
+  fn.register(23, 'setuid', ['number'], 'bigint')
 
   // Get current UID
-  var uid_before = fn.getuid()
-  var uid_before_val = (uid_before instanceof BigInt) ? uid_before.lo : uid_before
+  const uid_before = fn.getuid()
+  const uid_before_val = uid_before.lo
   log('UID before setuid: ' + uid_before_val)
 
   // Try to set UID to 0 (root) - catch EPERM if not jailbroken
   log('Attempting setuid(0)...')
-  var setuid_success = false
-  var error_msg = null
 
   try {
-    var setuid_result = fn.setuid(0)
-    var setuid_ret = (setuid_result instanceof BigInt) ? setuid_result.lo : setuid_result
+    const setuid_result = fn.setuid(0)
+    const setuid_ret = setuid_result.lo
     log('setuid returned: ' + setuid_ret)
-    setuid_success = (setuid_ret === 0)
   } catch (e) {
-    error_msg = e.toString()
+    const error_msg = (e as Error).toString()
     log('setuid threw exception: ' + error_msg)
   }
 
   // Get UID after setuid attempt
-  var uid_after = fn.getuid()
-  var uid_after_val = (uid_after instanceof BigInt) ? uid_after.lo : uid_after
+  const uid_after = fn.getuid()
+  const uid_after_val = uid_after.lo
   log('UID after setuid: ' + uid_after_val)
 
   if (uid_after_val === 0) {
@@ -48,7 +40,7 @@ function isJailbroken () {
   }
 }
 
-var stats = {
+export const stats = {
   total: 0,
   success: 0,
   filepath: '/download0/stats.json',
@@ -56,7 +48,11 @@ var stats = {
   // Load stats from file using syscalls
   load: function () {
     try {
-      var fd = fn.open(this.filepath, 0, 0)  // O_RDONLY
+      fn.register(0x3, 'read', ['bigint', 'bigint', 'number'], 'bigint')
+      fn.register(0x4, 'write', ['bigint', 'bigint', 'number'], 'bigint')
+      fn.register(0x5, 'open', ['string', 'number', 'number'], 'bigint')
+      fn.register(0x6, 'close', ['bigint'], 'bigint')
+      const fd = fn.open(this.filepath, 0, 0)  // O_RDONLY
       if (fd.lt(0)) {
         log('[STATS] No stats file found, starting fresh')
         this.total = 0
@@ -65,19 +61,19 @@ var stats = {
       }
 
       // Read file content
-      var buf = mem.malloc(1024)
-      var bytesRead = fn.read(fd, buf, 1024)
+      const buf = mem.malloc(1024)
+      const bytesRead = fn.read(fd, buf, 1024)
       fn.close(fd)
 
-      if (bytesRead.gt(0)) {
+      if (bytesRead.neq(new BigInt(0xFFFFFFFF, 0xFFFFFFFF))) {
         // Convert buffer to string
-        var str = ''
-        for (var i = 0; i < Number(bytesRead); i++) {
-          str += String.fromCharCode(mem.view(buf.add(i)).getUint8(0, true))
+        let str = ''
+        for (let i = 0; i < Number(bytesRead); i++) {
+          str += String.fromCharCode(mem.view(buf.add(i)).getUint8(0))
         }
 
         try {
-          var parsed = JSON.parse(str)
+          const parsed = JSON.parse(str)
           this.total = parsed.total || 0
           this.success = parsed.success || 0
           log('[STATS] Loaded: total=' + this.total + ', success=' + this.success)
@@ -89,7 +85,7 @@ var stats = {
       }
     } catch (e) {
       log('[STATS] Error loading stats: ' + e)
-      log(e.stack)
+      log((e as Error).stack ?? '')
       this.total = 0
       this.success = 0
     }
@@ -98,16 +94,20 @@ var stats = {
   // Save stats to file using syscalls
   save: function () {
     try {
+      fn.register(0x3, 'read', ['bigint', 'bigint', 'number'], 'bigint')
+      fn.register(0x4, 'write', ['bigint', 'bigint', 'number'], 'bigint')
+      fn.register(0x5, 'open', ['string', 'number', 'number'], 'bigint')
+      fn.register(0x6, 'close', ['bigint'], 'bigint')
       this.filepath = isJailbroken() ? '/mnt/sandbox/download/CUSA00960/stats.json' : '/download0/stats.json'
 
-      var data = JSON.stringify({
+      const data = JSON.stringify({
         total: this.total,
         success: this.success
       })
 
       // Open file for writing (O_WRONLY | O_CREAT | O_TRUNC)
       // O_WRONLY = 1, O_CREAT = 0x200, O_TRUNC = 0x400
-      var fd = fn.open(this.filepath, 0x601, 0x1FF)  // 0x1FF = 0777 permissions
+      const fd = fn.open(this.filepath, 0x601, 0x1FF)  // 0x1FF = 0777 permissions
 
       if (fd.lt(0)) {
         log('[STATS] Failed to open file for writing')
@@ -115,12 +115,12 @@ var stats = {
       }
 
       // Write data to file
-      var buf = mem.malloc(data.length)
-      for (var i = 0; i < data.length; i++) {
-        mem.view(buf.add(i)).setUint8(0, data.charCodeAt(i), true)
+      const buf = mem.malloc(data.length)
+      for (let i = 0; i < data.length; i++) {
+        mem.view(buf.add(i)).setUint8(0, data.charCodeAt(i))
       }
 
-      var bytesWritten = fn.write(fd, buf, data.length)
+      const bytesWritten = fn.write(fd, buf, data.length)
       fn.close(fd)
 
       if (bytesWritten.eq(data.length)) {
@@ -163,7 +163,7 @@ var stats = {
 
   // Print current stats
   print: function () {
-    var current = this.get()
+    const current = this.get()
     log('[STATS] ====== Statistics ======')
     log('[STATS] Total:        ' + current.total)
     log('[STATS] Success:      ' + current.success)

@@ -1,7 +1,11 @@
-function make_uaf (arr) {
-  var o = {}
-  for (var i in { xx: '' }) {
-    for (i of [arr]) {} // eslint-disable-line no-empty
+import { struct } from './types'
+
+export function make_uaf (arr: DataView) {
+  const o = {}
+  for (let i in { xx: '' }) {
+    // @ts-expect-error need to confuse variable i
+    for (i of [arr]);
+    // @ts-expect-error need to access it as well
     o[i]
   }
 }
