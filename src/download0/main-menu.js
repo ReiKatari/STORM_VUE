@@ -1,10 +1,13 @@
 (function () {
-  log('Loading main menu...')
+  include('languages.js')
+  log(lang.loadingMainMenu)
 
   var currentButton = 0
   var buttons = []
   var buttonTexts = []
   var buttonMarkers = []
+  var buttonOrigPos = []
+  var textOrigPos = []
 
   var normalButtonImg = 'file:///assets/img/button_over_9.png'
   var selectedButtonImg = 'file:///assets/img/button_over_9.png'
@@ -41,9 +44,9 @@
   jsmaf.root.children.push(logo)
 
   var menuOptions = [
-    { label: 'Jailbreak', script: 'loader.js', textImg: 'jailbreak_btn_txt.png' },
-    { label: 'Payload Menu', script: 'payload_host.js', textImg: 'pl_menu_btn_txt.png' },
-    { label: 'Config', script: 'config_ui.js', textImg: 'config_btn_txt.png' }
+    { label: lang.jailbreak, script: 'loader.js', textImg: 'jailbreak_btn_txt.png' },
+    { label: lang.payloadMenu, script: 'payload_host.js', textImg: 'pl_menu_btn_txt.png' },
+    { label: lang.config, script: 'config_ui.js', textImg: 'config_btn_txt.png' }
   ]
 
   var startY = 450
@@ -83,6 +86,9 @@
     btnText.style = 'white'
     buttonTexts.push(btnText)
     jsmaf.root.children.push(btnText)
+
+    buttonOrigPos.push({x: btnX, y: btnY})
+    textOrigPos.push({x: btnText.x, y: btnText.y})
   }
 
   var exitX = centerX - buttonWidth / 2
@@ -110,14 +116,100 @@
   jsmaf.root.children.push(exitMarker)
 
   var exitText = new jsmaf.Text()
-  exitText.text = 'Exit'
+  exitText.text = lang.exit
   exitText.x = exitX + buttonWidth / 2 - 20
   exitText.y = exitY + buttonHeight / 2 - 12
   exitText.style = 'white'
   buttonTexts.push(exitText)
   jsmaf.root.children.push(exitText)
 
+  buttonOrigPos.push({x: exitX, y: exitY})
+  textOrigPos.push({x: exitText.x, y: exitText.y})
+
+  var zoomInInterval = null
+  var zoomOutInterval = null
+  var prevButton = -1
+
+  function easeInOut (t) {
+    return (1 - Math.cos(t * Math.PI)) / 2
+  }
+
+  function animateZoomIn (btn, text, btnOrigX, btnOrigY, textOrigX, textOrigY) {
+    if (zoomInInterval) jsmaf.clearInterval(zoomInInterval)
+    var btnW = buttonWidth
+    var btnH = buttonHeight
+    var startScale = btn.scaleX || 1.0
+    var endScale = 1.1
+    var duration = 175
+    var elapsed = 0
+    var step = 16
+
+    zoomInInterval = jsmaf.setInterval(function () {
+      elapsed += step
+      var t = Math.min(elapsed / duration, 1)
+      var eased = easeInOut(t)
+      var scale = startScale + (endScale - startScale) * eased
+
+      btn.scaleX = scale
+      btn.scaleY = scale
+      btn.x = btnOrigX - (btnW * (scale - 1)) / 2
+      btn.y = btnOrigY - (btnH * (scale - 1)) / 2
+      text.scaleX = scale
+      text.scaleY = scale
+      text.x = textOrigX - (btnW * (scale - 1)) / 2
+      text.y = textOrigY - (btnH * (scale - 1)) / 2
+
+      if (t >= 1) {
+        jsmaf.clearInterval(zoomInInterval)
+        zoomInInterval = null
+      }
+    }, step)
+  }
+
+  function animateZoomOut (btn, text, btnOrigX, btnOrigY, textOrigX, textOrigY) {
+    if (zoomOutInterval) jsmaf.clearInterval(zoomOutInterval)
+    var btnW = buttonWidth
+    var btnH = buttonHeight
+    var startScale = btn.scaleX || 1.1
+    var endScale = 1.0
+    var duration = 175
+    var elapsed = 0
+    var step = 16
+
+    zoomOutInterval = jsmaf.setInterval(function () {
+      elapsed += step
+      var t = Math.min(elapsed / duration, 1)
+      var eased = easeInOut(t)
+      var scale = startScale + (endScale - startScale) * eased
+
+      btn.scaleX = scale
+      btn.scaleY = scale
+      btn.x = btnOrigX - (btnW * (scale - 1)) / 2
+      btn.y = btnOrigY - (btnH * (scale - 1)) / 2
+      text.scaleX = scale
+      text.scaleY = scale
+      text.x = textOrigX - (btnW * (scale - 1)) / 2
+      text.y = textOrigY - (btnH * (scale - 1)) / 2
+
+      if (t >= 1) {
+        jsmaf.clearInterval(zoomOutInterval)
+        zoomOutInterval = null
+      }
+    }, step)
+  }
+
   function updateHighlight () {
+    // Animate out the previous button
+    if (prevButton >= 0 && prevButton !== currentButton) {
+      buttons[prevButton].url = normalButtonImg
+      buttons[prevButton].alpha = 0.7
+      buttons[prevButton].borderColor = 'transparent'
+      buttons[prevButton].borderWidth = 0
+      buttonMarkers[prevButton].visible = false
+      animateZoomOut(buttons[prevButton], buttonTexts[prevButton], buttonOrigPos[prevButton].x, buttonOrigPos[prevButton].y, textOrigPos[prevButton].x, textOrigPos[prevButton].y)
+    }
+
+    // Set styles for all buttons
     for (var i = 0; i < buttons.length; i++) {
       if (i === currentButton) {
         buttons[i].url = selectedButtonImg
@@ -125,14 +217,25 @@
         buttons[i].borderColor = 'rgb(100,180,255)'
         buttons[i].borderWidth = 3
         buttonMarkers[i].visible = true
-      } else {
+        animateZoomIn(buttons[i], buttonTexts[i], buttonOrigPos[i].x, buttonOrigPos[i].y, textOrigPos[i].x, textOrigPos[i].y)
+      } else if (i !== prevButton) {
         buttons[i].url = normalButtonImg
         buttons[i].alpha = 0.7
         buttons[i].borderColor = 'transparent'
         buttons[i].borderWidth = 0
+        buttons[i].scaleX = 1.0
+        buttons[i].scaleY = 1.0
+        buttons[i].x = buttonOrigPos[i].x
+        buttons[i].y = buttonOrigPos[i].y
+        buttonTexts[i].scaleX = 1.0
+        buttonTexts[i].scaleY = 1.0
+        buttonTexts[i].x = textOrigPos[i].x
+        buttonTexts[i].y = textOrigPos[i].y
         buttonMarkers[i].visible = false
       }
     }
+
+    prevButton = currentButton
   }
 
   function handleButtonPress () {
@@ -185,5 +288,5 @@
 
   updateHighlight()
 
-  log('Main menu loaded')
+  log(lang.mainMenuLoaded)
 })()

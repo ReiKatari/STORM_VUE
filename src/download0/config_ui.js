@@ -2,8 +2,12 @@ if (typeof libc_addr === 'undefined') {
   include('userland.js')
 }
 
+if (typeof lang === 'undefined') {
+  include('languages.js')
+}
+
 (function () {
-  log('Loading config UI...')
+  log(lang.loadingConfig)
 
   var fs = {
     write: function (filename, content, callback) {
@@ -39,6 +43,8 @@ if (typeof libc_addr === 'undefined') {
   var buttons = []
   var buttonTexts = []
   var buttonMarkers = []
+  var buttonOrigPos = []
+  var textOrigPos = []
   var valueTexts = []
 
   var normalButtonImg = 'file:///assets/img/button_over_9.png'
@@ -68,7 +74,7 @@ if (typeof libc_addr === 'undefined') {
   jsmaf.root.children.push(logo)
 
   var title = new jsmaf.Text()
-  title.text = 'Config'
+  title.text = lang.config
   title.x = 910
   title.y = 120
   title.style = 'title'
@@ -83,11 +89,11 @@ if (typeof libc_addr === 'undefined') {
 
   // Create text elements for each stat
   var statsToDisplay = [
-    'Total Attempts: ' + statsData.total,
-    'Successes: ' + statsData.success,
-    'Failures: ' + statsData.failures,
-    'Success Rate: ' + statsData.successRate,
-    'Failure Rate: ' + statsData.failureRate
+    lang.totalAttempts + statsData.total,
+    lang.successes + statsData.success,
+    lang.failures + statsData.failures,
+    lang.successRate + statsData.successRate,
+    lang.failureRate + statsData.failureRate
   ]
 
   // Display each stat line
@@ -101,9 +107,9 @@ if (typeof libc_addr === 'undefined') {
   }
 
   var configOptions = [
-    { key: 'autolapse', label: 'Auto Lapse', textImg: 'auto_lapse_btn_txt.png' },
-    { key: 'autopoop', label: 'Auto Poop', textImg: 'auto_poop_btn_txt.png' },
-    { key: 'autoclose', label: 'Auto Close', textImg: 'auto_close_btn_txt.png' }
+    { key: 'autolapse', label: lang.autoLapse, textImg: 'auto_lapse_btn_txt.png' },
+    { key: 'autopoop', label: lang.autoPoop, textImg: 'auto_poop_btn_txt.png' },
+    { key: 'autoclose', label: lang.autoClose, textImg: 'auto_close_btn_txt.png' }
   ]
 
   var centerX = 960
@@ -145,6 +151,9 @@ if (typeof libc_addr === 'undefined') {
     })
     valueTexts.push(checkmark)
     jsmaf.root.children.push(checkmark)
+
+    buttonOrigPos.push({x: btnX, y: btnY})
+    textOrigPos.push({x: btnText.x, y: btnText.y})
   }
 
   var backX = centerX - buttonWidth / 2
@@ -172,14 +181,100 @@ if (typeof libc_addr === 'undefined') {
   jsmaf.root.children.push(backMarker)
 
   var backText = new jsmaf.Text()
-  backText.text = 'Back'
+  backText.text = lang.back
   backText.x = backX + buttonWidth / 2 - 20
   backText.y = backY + buttonHeight / 2 - 12
   backText.style = 'white'
   buttonTexts.push(backText)
   jsmaf.root.children.push(backText)
 
+  buttonOrigPos.push({x: backX, y: backY})
+  textOrigPos.push({x: backText.x, y: backText.y})
+
+  var zoomInInterval = null
+  var zoomOutInterval = null
+  var prevButton = -1
+
+  function easeInOut (t) {
+    return (1 - Math.cos(t * Math.PI)) / 2
+  }
+
+  function animateZoomIn (btn, text, btnOrigX, btnOrigY, textOrigX, textOrigY) {
+    if (zoomInInterval) jsmaf.clearInterval(zoomInInterval)
+    var btnW = buttonWidth
+    var btnH = buttonHeight
+    var startScale = btn.scaleX || 1.0
+    var endScale = 1.1
+    var duration = 175
+    var elapsed = 0
+    var step = 16
+
+    zoomInInterval = jsmaf.setInterval(function () {
+      elapsed += step
+      var t = Math.min(elapsed / duration, 1)
+      var eased = easeInOut(t)
+      var scale = startScale + (endScale - startScale) * eased
+
+      btn.scaleX = scale
+      btn.scaleY = scale
+      btn.x = btnOrigX - (btnW * (scale - 1)) / 2
+      btn.y = btnOrigY - (btnH * (scale - 1)) / 2
+      text.scaleX = scale
+      text.scaleY = scale
+      text.x = textOrigX - (btnW * (scale - 1)) / 2
+      text.y = textOrigY - (btnH * (scale - 1)) / 2
+
+      if (t >= 1) {
+        jsmaf.clearInterval(zoomInInterval)
+        zoomInInterval = null
+      }
+    }, step)
+  }
+
+  function animateZoomOut (btn, text, btnOrigX, btnOrigY, textOrigX, textOrigY) {
+    if (zoomOutInterval) jsmaf.clearInterval(zoomOutInterval)
+    var btnW = buttonWidth
+    var btnH = buttonHeight
+    var startScale = btn.scaleX || 1.1
+    var endScale = 1.0
+    var duration = 175
+    var elapsed = 0
+    var step = 16
+
+    zoomOutInterval = jsmaf.setInterval(function () {
+      elapsed += step
+      var t = Math.min(elapsed / duration, 1)
+      var eased = easeInOut(t)
+      var scale = startScale + (endScale - startScale) * eased
+
+      btn.scaleX = scale
+      btn.scaleY = scale
+      btn.x = btnOrigX - (btnW * (scale - 1)) / 2
+      btn.y = btnOrigY - (btnH * (scale - 1)) / 2
+      text.scaleX = scale
+      text.scaleY = scale
+      text.x = textOrigX - (btnW * (scale - 1)) / 2
+      text.y = textOrigY - (btnH * (scale - 1)) / 2
+
+      if (t >= 1) {
+        jsmaf.clearInterval(zoomOutInterval)
+        zoomOutInterval = null
+      }
+    }, step)
+  }
+
   function updateHighlight () {
+    // Animate out the previous button
+    if (prevButton >= 0 && prevButton !== currentButton) {
+      buttons[prevButton].url = normalButtonImg
+      buttons[prevButton].alpha = 0.7
+      buttons[prevButton].borderColor = 'transparent'
+      buttons[prevButton].borderWidth = 0
+      if (buttonMarkers[prevButton]) buttonMarkers[prevButton].visible = false
+      animateZoomOut(buttons[prevButton], buttonTexts[prevButton], buttonOrigPos[prevButton].x, buttonOrigPos[prevButton].y, textOrigPos[prevButton].x, textOrigPos[prevButton].y)
+    }
+
+    // Set styles for all buttons
     for (var i = 0; i < buttons.length; i++) {
       if (i === currentButton) {
         buttons[i].url = selectedButtonImg
@@ -187,14 +282,25 @@ if (typeof libc_addr === 'undefined') {
         buttons[i].borderColor = 'rgb(100,180,255)'
         buttons[i].borderWidth = 3
         if (buttonMarkers[i]) buttonMarkers[i].visible = true
-      } else {
+        animateZoomIn(buttons[i], buttonTexts[i], buttonOrigPos[i].x, buttonOrigPos[i].y, textOrigPos[i].x, textOrigPos[i].y)
+      } else if (i !== prevButton) {
         buttons[i].url = normalButtonImg
         buttons[i].alpha = 0.7
         buttons[i].borderColor = 'transparent'
         buttons[i].borderWidth = 0
+        buttons[i].scaleX = 1.0
+        buttons[i].scaleY = 1.0
+        buttons[i].x = buttonOrigPos[i].x
+        buttons[i].y = buttonOrigPos[i].y
+        buttonTexts[i].scaleX = 1.0
+        buttonTexts[i].scaleY = 1.0
+        buttonTexts[i].x = textOrigPos[i].x
+        buttonTexts[i].y = textOrigPos[i].y
         if (buttonMarkers[i]) buttonMarkers[i].visible = false
       }
     }
+
+    prevButton = currentButton
   }
 
   function updateValueText (index) {
@@ -307,5 +413,5 @@ if (typeof libc_addr === 'undefined') {
   updateHighlight()
   loadConfig()
 
-  log('Config UI loaded')
+  log(lang.configLoaded)
 })()

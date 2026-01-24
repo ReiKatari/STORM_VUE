@@ -57,6 +57,8 @@
   var buttons = []
   var buttonTexts = []
   var buttonMarkers = []
+  var buttonOrigPos = []
+  var textOrigPos = []
   var fileList = []
 
   var normalButtonImg = 'file:///assets/img/button_over_9.png'
@@ -190,6 +192,9 @@
     text.style = 'white'
     buttonTexts.push(text)
     jsmaf.root.children.push(text)
+
+    buttonOrigPos.push({x: btnX, y: btnY})
+    textOrigPos.push({x: text.x, y: text.y})
   }
 
   var exitX = 810
@@ -224,27 +229,120 @@
   buttonTexts.push(exitText)
   jsmaf.root.children.push(exitText)
 
+  buttonOrigPos.push({x: exitX, y: exitY})
+  textOrigPos.push({x: exitText.x, y: exitText.y})
+
+  var zoomInInterval = null
+  var zoomOutInterval = null
+  var prevButton = -1
+
+  function easeInOut (t) {
+    return (1 - Math.cos(t * Math.PI)) / 2
+  }
+
+  function animateZoomIn (btn, text, btnOrigX, btnOrigY, textOrigX, textOrigY) {
+    if (zoomInInterval) jsmaf.clearInterval(zoomInInterval)
+    var btnW = buttonWidth
+    var btnH = buttonHeight
+    var startScale = btn.scaleX || 1.0
+    var endScale = 1.1
+    var duration = 175
+    var elapsed = 0
+    var step = 16
+
+    zoomInInterval = jsmaf.setInterval(function () {
+      elapsed += step
+      var t = Math.min(elapsed / duration, 1)
+      var eased = easeInOut(t)
+      var scale = startScale + (endScale - startScale) * eased
+
+      btn.scaleX = scale
+      btn.scaleY = scale
+      btn.x = btnOrigX - (btnW * (scale - 1)) / 2
+      btn.y = btnOrigY - (btnH * (scale - 1)) / 2
+      text.scaleX = scale
+      text.scaleY = scale
+      text.x = textOrigX - (btnW * (scale - 1)) / 2
+      text.y = textOrigY - (btnH * (scale - 1)) / 2
+
+      if (t >= 1) {
+        jsmaf.clearInterval(zoomInInterval)
+        zoomInInterval = null
+      }
+    }, step)
+  }
+
+  function animateZoomOut (btn, text, btnOrigX, btnOrigY, textOrigX, textOrigY) {
+    if (zoomOutInterval) jsmaf.clearInterval(zoomOutInterval)
+    var btnW = buttonWidth
+    var btnH = buttonHeight
+    var startScale = btn.scaleX || 1.1
+    var endScale = 1.0
+    var duration = 175
+    var elapsed = 0
+    var step = 16
+
+    zoomOutInterval = jsmaf.setInterval(function () {
+      elapsed += step
+      var t = Math.min(elapsed / duration, 1)
+      var eased = easeInOut(t)
+      var scale = startScale + (endScale - startScale) * eased
+
+      btn.scaleX = scale
+      btn.scaleY = scale
+      btn.x = btnOrigX - (btnW * (scale - 1)) / 2
+      btn.y = btnOrigY - (btnH * (scale - 1)) / 2
+      text.scaleX = scale
+      text.scaleY = scale
+      text.x = textOrigX - (btnW * (scale - 1)) / 2
+      text.y = textOrigY - (btnH * (scale - 1)) / 2
+
+      if (t >= 1) {
+        jsmaf.clearInterval(zoomOutInterval)
+        zoomOutInterval = null
+      }
+    }, step)
+  }
+
   function updateHighlight () {
+    // Animate out the previous button
+    if (prevButton >= 0 && prevButton !== currentButton) {
+      buttons[prevButton].url = normalButtonImg
+      buttons[prevButton].alpha = 0.7
+      buttons[prevButton].borderWidth = 0
+      buttonTexts[prevButton].alpha = 0.8
+      buttonMarkers[prevButton].visible = false
+      animateZoomOut(buttons[prevButton], buttonTexts[prevButton], buttonOrigPos[prevButton].x, buttonOrigPos[prevButton].y, textOrigPos[prevButton].x, textOrigPos[prevButton].y)
+    }
+
+    // Set styles for all buttons
     for (var i = 0; i < buttons.length; i++) {
       if (i === currentButton) {
         buttons[i].url = selectedButtonImg
         buttons[i].alpha = 1.0
         buttons[i].borderColor = 'rgb(100,180,255)'
         buttons[i].borderWidth = 3
-        buttonTexts[i].color = 'rgb(255,255,255)'
-        buttonTexts[i].background = 'transparent'
         buttonTexts[i].alpha = 1.0
         buttonMarkers[i].visible = true
-      } else {
+        animateZoomIn(buttons[i], buttonTexts[i], buttonOrigPos[i].x, buttonOrigPos[i].y, textOrigPos[i].x, textOrigPos[i].y)
+      } else if (i !== prevButton) {
         buttons[i].url = normalButtonImg
         buttons[i].alpha = 0.7
         buttons[i].borderWidth = 0
-        buttonTexts[i].color = 'rgb(255,255,255)'
-        buttonTexts[i].background = 'transparent'
+        buttons[i].scaleX = 1.0
+        buttons[i].scaleY = 1.0
+        buttons[i].x = buttonOrigPos[i].x
+        buttons[i].y = buttonOrigPos[i].y
+        buttonTexts[i].scaleX = 1.0
+        buttonTexts[i].scaleY = 1.0
+        buttonTexts[i].x = textOrigPos[i].x
+        buttonTexts[i].y = textOrigPos[i].y
         buttonTexts[i].alpha = 0.8
         buttonMarkers[i].visible = false
       }
     }
+
+    prevButton = currentButton
     log('Selected button: ' + currentButton)
   }
 
