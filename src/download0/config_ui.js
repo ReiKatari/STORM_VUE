@@ -90,12 +90,13 @@ if (typeof libc_addr === 'undefined') {
   ]
 
   // Display each stat line
+  new Style({name: 'white', color: 'white'})
   for (var i = 0; i < statsToDisplay.length; i++) {
     var lineText = new jsmaf.Text()
     lineText.text = statsToDisplay[i]
-    lineText.background = '#FFFFFF'
     lineText.x = 20
     lineText.y = 120 + (i * 20)
+    lineText.style = 'white'
     jsmaf.root.children.push(lineText)
   }
 
