@@ -46,6 +46,9 @@ if (typeof libc_addr === 'undefined') {
 
   jsmaf.root.children.length = 0
 
+  new Style({name: 'white', color: 'white', size: 24})
+  new Style({name: 'title', color: 'white', size: 32})
+
   var background = new Image({
     url: 'file:///../download0/img/multiview_bg_VAF.png',
     x: 0,
@@ -64,13 +67,11 @@ if (typeof libc_addr === 'undefined') {
   })
   jsmaf.root.children.push(logo)
 
-  var title = new Image({
-    url: 'file:///../download0/img/config_btn_txt.png',
-    x: 760,
-    y: 100,
-    width: 400,
-    height: 75
-  })
+  var title = new jsmaf.Text()
+  title.text = 'Config'
+  title.x = 910
+  title.y = 120
+  title.style = 'title'
   jsmaf.root.children.push(title)
 
   // Include the stats tracker
@@ -90,7 +91,6 @@ if (typeof libc_addr === 'undefined') {
   ]
 
   // Display each stat line
-  new Style({name: 'white', color: 'white'})
   for (var i = 0; i < statsToDisplay.length; i++) {
     var lineText = new jsmaf.Text()
     lineText.text = statsToDisplay[i]
@@ -128,18 +128,13 @@ if (typeof libc_addr === 'undefined') {
 
     buttonMarkers.push(null)
 
-    var textImgWidth = 240
-    var textImgHeight = 40
-
-    var textImg = new Image({
-      url: 'file:///../download0/img/' + configOptions[i].textImg,
-      x: btnX + 20,
-      y: btnY + 20,
-      width: textImgWidth,
-      height: textImgHeight
-    })
-    buttonTexts.push(textImg)
-    jsmaf.root.children.push(textImg)
+    var btnText = new jsmaf.Text()
+    btnText.text = configOptions[i].label
+    btnText.x = btnX + 30
+    btnText.y = btnY + 28
+    btnText.style = 'white'
+    buttonTexts.push(btnText)
+    jsmaf.root.children.push(btnText)
 
     var checkmark = new Image({
       url: currentConfig[configOptions[i].key] ? 'file:///assets/img/check_small_on.png' : 'file:///assets/img/check_small_off.png',
@@ -176,18 +171,13 @@ if (typeof libc_addr === 'undefined') {
   buttonMarkers.push(backMarker)
   jsmaf.root.children.push(backMarker)
 
-  var backTextImgWidth = buttonWidth * 0.5
-  var backTextImgHeight = buttonHeight * 0.5
-
-  var backTextImg = new Image({
-    url: 'file:///../download0/img/back_btn_txt.png',
-    x: backX + (buttonWidth - backTextImgWidth) / 2,
-    y: backY + (buttonHeight - backTextImgHeight) / 2,
-    width: backTextImgWidth,
-    height: backTextImgHeight
-  })
-  buttonTexts.push(backTextImg)
-  jsmaf.root.children.push(backTextImg)
+  var backText = new jsmaf.Text()
+  backText.text = 'Back'
+  backText.x = backX + buttonWidth / 2 - 20
+  backText.y = backY + buttonHeight / 2 - 12
+  backText.style = 'white'
+  buttonTexts.push(backText)
+  jsmaf.root.children.push(backText)
 
   function updateHighlight () {
     for (var i = 0; i < buttons.length; i++) {

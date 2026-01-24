@@ -11,6 +11,9 @@
 
   jsmaf.root.children.length = 0
 
+  new Style({name: 'white', color: 'white', size: 24})
+  new Style({name: 'title', color: 'white', size: 32})
+
   var audio = new jsmaf.AudioClip()
   audio.volume = 0.5  // 50% volume
   audio.open('file://../download0/sfx/bgm.wav')
@@ -73,18 +76,13 @@
     buttonMarkers.push(marker)
     jsmaf.root.children.push(marker)
 
-    var textImgWidth = buttonWidth * 0.5
-    var textImgHeight = buttonHeight * 0.5
-
-    var textImg = new Image({
-      url: 'file:///../download0/img/' + menuOptions[i].textImg,
-      x: btnX + (buttonWidth - textImgWidth) / 2,
-      y: btnY + (buttonHeight - textImgHeight) / 2,
-      width: textImgWidth,
-      height: textImgHeight
-    })
-    buttonTexts.push(textImg)
-    jsmaf.root.children.push(textImg)
+    var btnText = new jsmaf.Text()
+    btnText.text = menuOptions[i].label
+    btnText.x = btnX + buttonWidth / 2 - 60
+    btnText.y = btnY + buttonHeight / 2 - 12
+    btnText.style = 'white'
+    buttonTexts.push(btnText)
+    jsmaf.root.children.push(btnText)
   }
 
   var exitX = centerX - buttonWidth / 2
@@ -111,18 +109,13 @@
   buttonMarkers.push(exitMarker)
   jsmaf.root.children.push(exitMarker)
 
-  var exitTextImgWidth = buttonWidth * 0.5
-  var exitTextImgHeight = buttonHeight * 0.5
-
-  var exitTextImg = new Image({
-    url: 'file:///../download0/img/exit_btn_txt.png',
-    x: exitX + (buttonWidth - exitTextImgWidth) / 2,
-    y: exitY + (buttonHeight - exitTextImgHeight) / 2,
-    width: exitTextImgWidth,
-    height: exitTextImgHeight
-  })
-  buttonTexts.push(exitTextImg)
-  jsmaf.root.children.push(exitTextImg)
+  var exitText = new jsmaf.Text()
+  exitText.text = 'Exit'
+  exitText.x = exitX + buttonWidth / 2 - 20
+  exitText.y = exitY + buttonHeight / 2 - 12
+  exitText.style = 'white'
+  buttonTexts.push(exitText)
+  jsmaf.root.children.push(exitText)
 
   function updateHighlight () {
     for (var i = 0; i < buttons.length; i++) {

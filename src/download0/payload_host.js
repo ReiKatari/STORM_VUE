@@ -50,6 +50,9 @@
 
   jsmaf.root.children.length = 0
 
+  new Style({name: 'white', color: 'white', size: 24})
+  new Style({name: 'title', color: 'white', size: 32})
+
   var currentButton = 0
   var buttons = []
   var buttonTexts = []
@@ -77,13 +80,11 @@
   })
   jsmaf.root.children.push(logo)
 
-  var title = new Image({
-    url: 'file:///../download0/img/pl_menu_btn_txt.png',
-    x: 760,
-    y: 100,
-    width: 400,
-    height: 75
-  })
+  var title = new jsmaf.Text()
+  title.text = 'Payload Menu'
+  title.x = 860
+  title.y = 120
+  title.style = 'title'
   jsmaf.root.children.push(title)
 
   if (typeof fn !== 'undefined') {
@@ -182,16 +183,11 @@
       displayName = displayName.substring(0, 17) + '...'
     }
 
-    var text = new Text({
-      x: btnX + 20,
-      y: btnY + 30,
-      width: buttonWidth - 40,
-      height: 40,
-      text: displayName,
-      color: 'rgb(255,255,255)',
-      background: 'transparent',
-      fontSize: 24
-    })
+    var text = new jsmaf.Text()
+    text.text = displayName
+    text.x = btnX + 20
+    text.y = btnY + 30
+    text.style = 'white'
     buttonTexts.push(text)
     jsmaf.root.children.push(text)
   }
@@ -220,18 +216,13 @@
   buttonMarkers.push(exitMarker)
   jsmaf.root.children.push(exitMarker)
 
-  var exitTextImgWidth = buttonWidth * 0.5
-  var exitTextImgHeight = buttonHeight * 0.5
-
-  var exitTextImg = new Image({
-    url: 'file:///../download0/img/back_btn_txt.png',
-    x: exitX + (buttonWidth - exitTextImgWidth) / 2,
-    y: exitY + (buttonHeight - exitTextImgHeight) / 2,
-    width: exitTextImgWidth,
-    height: exitTextImgHeight
-  })
-  buttonTexts.push(exitTextImg)
-  jsmaf.root.children.push(exitTextImg)
+  var exitText = new jsmaf.Text()
+  exitText.text = 'Back'
+  exitText.x = exitX + buttonWidth / 2 - 20
+  exitText.y = exitY + buttonHeight / 2 - 12
+  exitText.style = 'white'
+  buttonTexts.push(exitText)
+  jsmaf.root.children.push(exitText)
 
   function updateHighlight () {
     for (var i = 0; i < buttons.length; i++) {
