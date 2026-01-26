@@ -1017,7 +1017,7 @@ function find_allproc () {
 }
 
 function jailbreak () {
-  if (!kernel_offset || !('KL_LOCK' in kernel_offset)) {
+  if (!kernel_offset) {
     throw new Error('Kernel offsets not loaded')
   }
   if (FW_VERSION === null) {
