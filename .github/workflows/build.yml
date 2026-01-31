@@ -1,0 +1,49 @@
+name: Build and Release
+
+permissions:
+  contents: write
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Copy assets to dist
+        run: |
+          cp src/download0/payloads/*.elf dist/download0/payloads/
+          cp -r src/download0/img dist/download0/
+          cp -r src/download0/sfx dist/download0/
+          cp -r src/download0/vid dist/download0/
+          cp src/download0/*.aes dist/download0/
+
+      - name: Zip dist
+        run: cd dist && zip -r ../vue-after-free-${{ github.ref_name }}.zip . && cd ..
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vue-after-free-${{ github.ref_name }}
+          path: vue-after-free-${{ github.ref_name }}.zip
+
+      - name: Upload release asset
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: vue-after-free-${{ github.ref_name }}.zip
