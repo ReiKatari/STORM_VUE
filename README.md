@@ -1,14 +1,20 @@
-<div align="center">
- 
-# Vue After Free
-
-<img width="280" height="243" alt="logo2" src="https://github.com/user-attachments/assets/891a79c3-e9ed-41d9-a005-016126c06fc3" />
-
+# Vue-After-Free
 A PlayStation Vue userland code execution exploit. 
-</div>
+* PlayStation 4 only.
 
-> [!NOTE]
-> Can be chained with the kernel exploit Lapse up to 12.02 and Poopsploit up to 13.00 on PS4 only.
+## Vulnerability Scope
+KEX= Kernel Exploit
+| vue-after-free (Userland) | Lapse (KEX) | Poopsploit (KEX) |
+| :------------------------ | :---------- | :--------------- |
+| 5.05–13.02                | 1.01–12.02  | ?.00–13.00       |
+
+## Supported by this Repository
+
+This table indicates firmware versions for which the _current version_ of this repository provides a functional tested jailbreak for. 
+
+| 7.00-13.00 |
+| :--------- |
+* Userland exploit works 5.05 to 13.02 as is.
 
 ## Requirments
   * Firmware 9.00 or above. 
@@ -73,4 +79,21 @@ A PlayStation Vue userland code execution exploit.
   11. Test the internet connection if you get an IP address it's working. 
   * The internet connection failing does not indicate that it actually cannot connect to the internet, it just means the PS4 cannot communicate with Sony servers which is the point of the DNS
 
+# FAQ 
+
 # Credits 
+- [c0w-ar](https://github.com/c0w-ar/)
+- [earthonion](https://github.com/earthonion)
+- [ufm42](https://github.com/ufm42)
+- [D-Link Turtle](https://github.com/iMrDJAi) 
+- [Gezine](https://github.com/gezine)
+- [Helloyunho](https://github.com/Helloyunho)
+- [Dr.Yenyen](https://github.com/DrYenyen)
+- [AlAzif](https://github.com/Al-Azif) Reference for exploit table and retail application advice.
+- abc
+- [TheFlow](https://github.com/TheOfficialFloW)
+- [Lua Loader project](https://github.com/shahrilnet/remote_lua_loader)
+
+## payload sources:
+- elfldr.elf by John Törnblom: https://github.com/ps4-payload-dev/elfldr
+- AIOfix_network.elf by Gezine : https://github.com/Gezine/BD-JB-1250/blob/main/payloads/lapse/src/org/bdj/external/aiofix_network.c

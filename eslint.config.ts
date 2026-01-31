@@ -6,6 +6,9 @@ import neostandard from 'neostandard'
 
 export default defineConfig([
   {
+    ignores: ['**/vid/**/*.ts'], // Ignore MPEG-TS video files
+  },
+  {
     files: ['**/*.{js,mjs,cjs,ts,mts,cts}'],
     plugins: { js },
     extends: ['js/recommended'],
@@ -34,6 +37,7 @@ export default defineConfig([
       'no-fallthrough': 'off',
       'no-new-native-nonconstructor': 'off', // we use our own BigInt
       'no-extend-native': 'off', // we extend native for better usage
+      'no-new': 'off',
 
       // TS duplicates
       '@typescript-eslint/no-unused-vars': 'off',
