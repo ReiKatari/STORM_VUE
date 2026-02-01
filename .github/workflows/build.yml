@@ -36,6 +36,12 @@ jobs:
       - name: Zip dist
         run: cd dist && zip -r ../vue-after-free-${{ github.ref_name }}.zip . && cd ..
 
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -47,3 +53,62 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: vue-after-free-${{ github.ref_name }}.zip
+
+  ufs-image:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Create UFS2 image in FreeBSD
+        uses: vmactions/freebsd-vm@v1
+        with:
+          release: "14.2"
+          copyback: true
+          prepare: ""
+          run: |
+            set -e
+
+            # Create 256MB image file
+            truncate -s 256M download0.dat
+
+            # Attach as memory disk (returns e.g. "md0")
+            MD=$(mdconfig -a -t vnode -f "$(pwd)/download0.dat")
+
+            # Create UFS2 filesystem
+            newfs -U -O 2 -b 32768 -f 4096 /dev/${MD}
+
+            # Mount
+            mount /dev/${MD} /mnt
+
+            # Copy dist contents
+            cp -R dist/download0/* /mnt/
+
+            # Create empty dirs
+            mkdir -p /mnt/mgl /mnt/video_cache /mnt/xhr_cache
+
+            # Set permissions
+            chmod -R 777 /mnt/*
+
+            # Unmount and detach
+            umount /mnt
+            mdconfig -d -u ${MD}
+
+      - name: Verify image
+        run: file download0.dat
+
+      - name: Upload UFS2 image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: download0.dat
+          path: download0.dat
+
+      - name: Upload UFS2 release asset
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: download0.dat
