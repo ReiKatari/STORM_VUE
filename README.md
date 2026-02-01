@@ -1,12 +1,18 @@
-# Vue-After-Free
-A PlayStation Vue userland code execution exploit. 
-* PlayStation 4 only.
+<p align="center">
+    <img width="25%" height="25%" alt="logo2" src="https://github.com/user-attachments/assets/5596a357-61c3-471c-9a1e-b8c3d6de33c8" />
+</p>
 
+<h1 align="center"> Vue-After-Free </h1>
+<p  align="center">
+    A PlayStation Vue userland code execution exploit. 
+</p>
+
+> PlayStation 4 only.
 ## Vulnerability Scope
 KEX= Kernel Exploit
 | vue-after-free (Userland) | Lapse (KEX) | Poopsploit (KEX) |
 | :------------------------ | :---------- | :--------------- |
-| 5.05–13.02                | 1.01–12.02  | ?.00–13.00       |
+| 5.05–13.04                | 1.01–12.02  | ?.00–13.00       |
 
 ## Supported by this Repository
 
@@ -95,5 +101,6 @@ This table indicates firmware versions for which the _current version_ of this r
 - [Lua Loader project](https://github.com/shahrilnet/remote_lua_loader)
 
 ## payload sources:
-- elfldr.elf by John Törnblom: https://github.com/ps4-payload-dev/elfldr
-- AIOfix_network.elf by Gezine : https://github.com/Gezine/BD-JB-1250/blob/main/payloads/lapse/src/org/bdj/external/aiofix_network.c
+- [elfldr.elf](https://github.com/ps4-payload-dev/elfldr) by John Törnblom 
+- [AIOfix_network.elf](https://github.com/Gezine/BD-JB-1250/blob/main/payloads/lapse/src/org/bdj/external/aiofix_network.c) by Gezine
+- [np-fake-signin](https://github.com/earthonion/np-fake-signin) by earthonion
