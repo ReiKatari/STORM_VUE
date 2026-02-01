@@ -80,7 +80,7 @@ jobs:
             MD=$(mdconfig -a -t vnode -f "$(pwd)/download0.dat")
 
             # Create UFS2 filesystem
-            newfs -U -O 2 -b 32768 -f 4096 /dev/${MD}
+            newfs -O 2 -b 32768 -f 4096 /dev/${MD}
 
             # Mount
             mount /dev/${MD} /mnt
