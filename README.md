@@ -8,11 +8,17 @@
 </p>
 
 > PlayStation 4 only.
+
+# Vue After Free Userland
+CVE-2018-4441 was shortly applied but due to instability and bad success rate it was dropped.   
+CVE-2017-7117 is used for the userland, and has been chained with Lapse and Poopsploit(netctrl) kernel exploits on respective firmwares marked below.
+
+
 ## Vulnerability Scope
 KEX= Kernel Exploit
 | vue-after-free (Userland) | Lapse (KEX) | Poopsploit (KEX) |
 | :------------------------ | :---------- | :--------------- |
-| 5.05–13.04                | 1.01–12.02  | ?.00–13.00       |
+| 5.05–13.04                | 1.01–12.02  | 1.01-13.00       |
 
 ## Supported by this Repository
 
@@ -20,7 +26,14 @@ This table indicates firmware versions for which the _current version_ of this r
 
 | 7.00-13.00 |
 | :--------- |
+
+* By default Lapse is used from 7.00 to 12.02, and Poopsploit from 12.50-13.00. Although you can choose to run Poopsploit on as low as 9.00.
 * Userland exploit works 5.05 to 13.02 as is.
+
+# FAQ 
+Q: Will this work on 13.02 or above? A: Only the userland, you cannot jailbreak above 13.00 with the files in this repo. 
+Q: I ran Vue and my console shutdown what do i do? A: If a kernel panic occured you may need to press the power button on your console twice, then retry running the exploit.   
+Q: How can I run a payload? A: Closing and Reopening Vue is required between payload runs. Select the payload from the UI. 
 
 ## Requirments
   * Firmware 9.00 or above. 
@@ -30,8 +43,8 @@ This table indicates firmware versions for which the _current version_ of this r
   * FTP access to the console.
   * USB flash drive.
 
-  * Playstation Vue 1.01 base and 1.xx patch.(Referred to as "PS Vue" later in the guide).
-
+  * Playstation Vue 1.01 base and 1.24 patch.(Referred to as "PS Vue" later in the guide). [Download](https://www.mediafire.com/file/45owcabezln2ykm/CUSA00960.zip/file)
+  
 ### For Non-Jailbroken PS4
   * USB flash drive.
   * System backup file.
@@ -54,7 +67,8 @@ This table indicates firmware versions for which the _current version_ of this r
   12. Delete the save file with the "Delete Save Game" option.
   13. On your USB go to the following path "PS4/APOLLO/15c6264b_CUSA00960_localstorage.aes" and delete the localstorage.aes. Then place the one from the repo there. 
   14. In Apollo Save Tool go to USB Saves and select the PS Vue save(CUSA00960) and choose the option "Copy save game to HDD". 
-  15. Reboot your console then open PS Vue and wait for the exploit to run.
+  15. Reboot your console then open PS Vue run the exploit by pressing on the jailbreak button or config the autoloader.
+  16. Optionally after jailbreaking run the [np-fake-signin](https://github.com/Vuemony/vue-after-free/blob/main/README.md#np-fake-signin) payload to avoid the PSN pop-up.
 
 ## Non-Jailbroken PS4
   1. Format your USB Drive to Exfat. 
@@ -68,7 +82,8 @@ This table indicates firmware versions for which the _current version_ of this r
   6. Go to Settings>Storage>System Storage>Capture Gallery>All and backup your captures to the USB. (Sufficient space required.)
   7. Go to Settings>System>Back Up and Restore>Restore PS4 and select the the system backup there and restore it. 
   8. When the console reboots you will have a fake activated user account and PS Vue and it's exploit data. 
-  9. Open PS Vue and wait for the exploit to run.
+  9. Open PS Vue run the exploit by pressing on the jailbreak button or config the autoloader.
+  10. Optionally after jailbreaking run the [np-fake-signin](https://github.com/Vuemony/vue-after-free/blob/main/README.md#np-fake-signin) payload to avoid the PSN pop-up.
   * User account ID is "1111111111111111" you cannot change it but you can create another user and fake activate it, then while jailbroken follow the instructions above for jailbroken users to set up PS Vue while signed into the newly activated account.
 
 # Connecting to the internet. 
@@ -85,7 +100,26 @@ This table indicates firmware versions for which the _current version_ of this r
   11. Test the internet connection if you get an IP address it's working. 
   * The internet connection failing does not indicate that it actually cannot connect to the internet, it just means the PS4 cannot communicate with Sony servers which is the point of the DNS
 
-# FAQ 
+
+# Payloads
+Vue After Free comes preloaded with some payloads. 
+
+### NP-Fake-SignIn
+The np-fake-signin payload gets rid of the first PS Vue pop-up asking you to sign into PSN. 
+In the payloads section of Vue, you will see np-fake-signin-ps4-vue.elf and np-fake-signin-ps4-user.elf. 
+np-fake-signin-ps4-vue.elf should only be used if you are using the system backup provided on this repo. 
+np-fake-signin-ps4-user.elf should be used for any other fake activated user account. 
+
+## FTP 
+The ftp-server.ts payload gives you sandbox FTP to quickly swap exploit or cosmetic files without running a kernel exploit/jailbreaking.
+
+## WebUI
+
+## ELFLDR
+elfldr.elf is used to load elf and bin payloads post exploit when HEN or GoldHEN have not been loaded. 
+
+## AIOFIX 
+This elf file is automatically loaded when the lapse kernel exploit has executed successfully it fixes issues in some games. It is not needed for poopsploit/netctrl.
 
 # Credits 
 - [c0w-ar](https://github.com/c0w-ar/)
