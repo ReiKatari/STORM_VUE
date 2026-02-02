@@ -48,7 +48,6 @@ jobs:
         with:
           name: dist
           path: dist/
-          retention-days: 1
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -114,6 +113,11 @@ jobs:
         with:
           name: download0.dat
           path: download0.dat
+
+      - name: Delete dist artifact
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: dist
 
       - name: Upload UFS2 release asset
         if: github.event_name == 'release'
