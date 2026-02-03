@@ -1855,8 +1855,8 @@ export function lapse () {
       return amaj === bmaj ? amin - bmin : amaj - bmaj
     }
 
-    if (compare_version(FW_VERSION, '8.00') < 0 || compare_version(FW_VERSION, '12.02') > 0) {
-      log('Unsupported PS4 firmware\nSupported: 8.00-12.02\nAborting...')
+    if (compare_version(FW_VERSION, '7.00') < 0 || compare_version(FW_VERSION, '12.02') > 0) {
+      log('Unsupported PS4 firmware\nSupported: 7.00-12.02\nAborting...')
       send_notification('Unsupported PS4 firmware\nAborting...')
       return false
     }
