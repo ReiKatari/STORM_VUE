@@ -31,9 +31,9 @@ This table indicates firmware versions for which the _current version_ of this r
 * Userland exploit works 5.05 to 13.02 as is.
 
 # FAQ 
-Q: Will this work on 13.02 or above? A: Only the userland, you cannot jailbreak above 13.00 with the files in this repo. 
-Q: I ran Vue and my console shutdown what do i do? A: If a kernel panic occured you may need to press the power button on your console twice, then retry running the exploit.   
-Q: How can I run a payload? A: Closing and Reopening Vue is required between payload runs. Select the payload from the UI. 
+Q: Will this work on 13.02 or above? A: Only the userland, you cannot jailbreak above 13.00 with the files in this repo.   
+Q: I ran Vue and my console shutdown what do i do? A: If a kernel panic occured you may need to press the power button on your console twice, then retry running the exploit.     
+Q: How can I run a payload? A: Closing and Reopening Vue is required between payload runs. Select the payload from the UI.   
 
 ## Requirments
   * Firmware 7.00 or above. 
