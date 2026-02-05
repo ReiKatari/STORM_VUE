@@ -177,7 +177,7 @@ let master_r_pipe_data: BigInt = new BigInt(0)
 let victim_r_pipe_data: BigInt = new BigInt(0)
 
 // Corrupt pipebuf of masterRpipeFd.
-let master_pipe_buf = malloc(PIPEBUF_SIZE)
+const master_pipe_buf = malloc(PIPEBUF_SIZE)
 
 write32(check_len, 8)
 
