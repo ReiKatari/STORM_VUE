@@ -1231,7 +1231,7 @@ function trigger_ucred_triplefree () {
     let count = 0
 
     // Set cr_refcnt back to 1.
-    while (count < 1000) {
+    while (count < 10000) {
       // Reclaim with iov.
       trigger_iov_recvmsg()
       sched_yield()
