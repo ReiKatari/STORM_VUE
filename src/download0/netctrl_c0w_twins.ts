@@ -745,9 +745,9 @@ function cleanup (kill_workers = false) {
   close(new BigInt(iov_sock_1))
   close(new BigInt(iov_sock_0))
 
-  if (uaf_socket !== undefined) {
-    close(new BigInt(uaf_socket))
-  }
+  // if (uaf_socket !== undefined) {
+  //   close(new BigInt(uaf_socket)) // hangs
+  // }
 
   for (let i = 0; i < IOV_THREAD_NUM; i++) {
     const worker = iov_recvmsg_workers[i]
