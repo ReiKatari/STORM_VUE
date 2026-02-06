@@ -174,7 +174,7 @@ if (typeof lang === 'undefined') {
 
     buttonMarkers.push(null)
 
-    let btnText: any
+    let btnText: Image | jsmaf.Text
     if (useImageText) {
       btnText = new Image({
         url: textImageBase + configOption.imgKey + '.png',
@@ -204,7 +204,7 @@ if (typeof lang === 'undefined') {
       valueTexts.push(checkmark)
       jsmaf.root.children.push(checkmark)
     } else {
-      let valueLabel: any
+      let valueLabel: Image | jsmaf.Text
       if (useImageText) {
         valueLabel = new Image({
           url: textImageBase + jbBehaviorImgKeys[currentConfig.jb_behavior] + '.png',
@@ -220,7 +220,7 @@ if (typeof lang === 'undefined') {
         valueLabel.y = btnY + 28
         valueLabel.style = 'white'
       }
-      valueTexts.push(valueLabel as any)
+      valueTexts.push(valueLabel)
       jsmaf.root.children.push(valueLabel)
     }
 
@@ -252,7 +252,7 @@ if (typeof lang === 'undefined') {
   buttonMarkers.push(backMarker)
   jsmaf.root.children.push(backMarker)
 
-  let backText: any
+  let backText: Image | jsmaf.Text
   if (useImageText) {
     backText = new Image({
       url: textImageBase + 'back.png',
@@ -404,9 +404,9 @@ if (typeof lang === 'undefined') {
       valueText.url = value ? 'file:///assets/img/check_small_on.png' : 'file:///assets/img/check_small_off.png'
     } else {
       if (useImageText) {
-        (valueText as any).url = textImageBase + jbBehaviorImgKeys[currentConfig.jb_behavior] + '.png'
+        (valueText as Image).url = textImageBase + jbBehaviorImgKeys[currentConfig.jb_behavior] + '.png'
       } else {
-        (valueText as any).text = jbBehaviorLabels[currentConfig.jb_behavior] || jbBehaviorLabels[0]
+        (valueText as jsmaf.Text).text = jbBehaviorLabels[currentConfig.jb_behavior] || jbBehaviorLabels[0]
       }
     }
   }
@@ -473,7 +473,8 @@ if (typeof lang === 'undefined') {
         currentConfig.jb_behavior = (currentConfig.jb_behavior + 1) % jbBehaviorLabels.length
         log(key + ' = ' + jbBehaviorLabels[currentConfig.jb_behavior])
       } else {
-        (currentConfig as any)[key] = !(currentConfig as any)[key]
+        const boolKey = key as 'autolapse' | 'autopoop' | 'autoclose'
+        currentConfig[boolKey] = !currentConfig[boolKey]
 
         if (key === 'autolapse' && currentConfig.autolapse === true) {
           currentConfig.autopoop = false
@@ -495,7 +496,7 @@ if (typeof lang === 'undefined') {
           log('autolapse disabled (autopoop enabled)')
         }
 
-        log(key + ' = ' + (currentConfig as any)[key])
+        log(key + ' = ' + currentConfig[boolKey])
       }
 
       updateValueText(currentButton)

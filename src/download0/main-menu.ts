@@ -83,7 +83,7 @@ import { fn, BigInt } from 'download0/types'
     buttonMarkers.push(marker)
     jsmaf.root.children.push(marker)
 
-    let btnText: any
+    let btnText: Image | jsmaf.Text
     if (useImageText) {
       btnText = new Image({
         url: textImageBase + menuOptions[i]!.imgKey + '.png',
@@ -130,7 +130,7 @@ import { fn, BigInt } from 'download0/types'
   buttonMarkers.push(exitMarker)
   jsmaf.root.children.push(exitMarker)
 
-  let exitText: any
+  let exitText: Image | jsmaf.Text
   if (useImageText) {
     exitText = new Image({
       url: textImageBase + 'exit.png',

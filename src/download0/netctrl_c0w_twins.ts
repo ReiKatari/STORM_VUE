@@ -915,7 +915,10 @@ function setup_log_screen () {
 
   const bg = new Image({
     url: 'file:///../download0/img/multiview_bg_VAF.png',
-    x: 0, y: 0, width: 1920, height: 1080
+    x: 0,
+    y: 0,
+    width: 1920,
+    height: 1080
   })
   jsmaf.root.children.push(bg)
 
@@ -923,7 +926,7 @@ function setup_log_screen () {
     new Style({ name: 'log' + i, color: LOG_COLORS[i], size: 20 })
   }
 
-  const logLines: any[] = []
+  const logLines: jsmaf.Text[] = []
   const logBuf: string[] = []
 
   for (let i = 0; i < LOG_MAX_LINES; i++) {
@@ -953,8 +956,8 @@ function yield_to_render (callback: () => void) {
     jsmaf.clearInterval(id)
     try {
       callback()
-    } catch (e: any) {
-      log('ERROR: ' + e.message)
+    } catch (e) {
+      log('ERROR: ' + (e as Error).message)
       cleanup()
     }
   }, 0)
