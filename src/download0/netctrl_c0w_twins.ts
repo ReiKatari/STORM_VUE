@@ -1127,7 +1127,7 @@ function jailbreak () {
   log('Jailbreak Complete - JAILBROKEN')
   utils.notify('The Vue-after-Free team congratulates you\nNetCtrl Finished OK\nEnjoy freedom')
 
-  cleanup(true) // Close sockets and kill workers on success
+  cleanup(false) // Close sockets and kill workers on success
   show_success()
   run_binloader()
 }
