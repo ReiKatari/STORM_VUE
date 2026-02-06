@@ -178,8 +178,8 @@ import { libc_addr } from 'download0/userland'
     buttonMarkers.push(marker)
     jsmaf.root.children.push(marker)
 
-    if (displayName.length > 20) {
-      displayName = displayName.substring(0, 17) + '...'
+    if (displayName.length > 30) {
+      displayName = displayName.substring(0, 27) + '...'
     }
 
     const text = new jsmaf.Text()
