@@ -1,6 +1,7 @@
 import { fn, mem, BigInt } from 'download0/types'
 import { binloader_init } from 'download0/binloader'
 import { libc_addr } from 'download0/userland'
+import { lang, useImageText, textImageBase } from 'download0/languages'
 
 (function () {
   if (typeof libc_addr === 'undefined') {
@@ -83,12 +84,23 @@ import { libc_addr } from 'download0/userland'
   })
   jsmaf.root.children.push(logo)
 
-  const title = new jsmaf.Text()
-  title.text = lang.payloadMenu
-  title.x = 880
-  title.y = 120
-  title.style = 'title'
-  jsmaf.root.children.push(title)
+  if (useImageText) {
+    const title = new Image({
+      url: textImageBase + 'payloadMenu.png',
+      x: 830,
+      y: 100,
+      width: 250,
+      height: 60
+    })
+    jsmaf.root.children.push(title)
+  } else {
+    const title = new jsmaf.Text()
+    title.text = lang.payloadMenu
+    title.x = 880
+    title.y = 120
+    title.style = 'title'
+    jsmaf.root.children.push(title)
+  }
 
   fn.register(0x05, 'open_sys', ['bigint', 'bigint', 'bigint'], 'bigint')
   fn.register(0x06, 'close_sys', ['bigint'], 'bigint')

@@ -131,22 +131,24 @@ const compare_version = (a: string, b: string) => {
 }
 
 if (!is_jailbroken) {
-  if (compare_version(FW_VERSION, '8.00') >= 0 || compare_version(FW_VERSION, '12.02') <= 0) {
-    utils.notify(FW_VERSION + ' Detected! ')
+  const jb_behavior = (typeof CONFIG !== 'undefined' && typeof CONFIG.jb_behavior === 'number') ? CONFIG.jb_behavior : 0
 
-    // Increment total attempts
-    stats.incrementTotal()
-    lapse()
+  stats.incrementTotal()
+  utils.notify(FW_VERSION + ' Detected!')
 
-    // uncomment to test netctrl
-    // include('netctrl_c0w_twins.js')
-  } else if (compare_version(FW_VERSION, '12.52') >= 0 || compare_version(FW_VERSION, '13.00') <= 0) {
-    utils.notify(FW_VERSION + ' Detected! \xF0\x9F\xA5\xB2')
-
-    // Increment total attempts
-    stats.incrementTotal()
-
+  if (jb_behavior === 1) {
+    log('JB Behavior: NetControl (forced)')
     include('netctrl_c0w_twins.js')
+  } else if (jb_behavior === 2) {
+    log('JB Behavior: Lapse (forced)')
+    lapse()
+  } else {
+    log('JB Behavior: Auto Detect')
+    if (compare_version(FW_VERSION, '8.00') >= 0 && compare_version(FW_VERSION, '12.02') <= 0) {
+      lapse()
+    } else if (compare_version(FW_VERSION, '12.52') >= 0 && compare_version(FW_VERSION, '13.00') <= 0) {
+      include('netctrl_c0w_twins.js')
+    }
   }
 
   const start_time = Date.now()

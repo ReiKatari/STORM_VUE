@@ -1,4 +1,4 @@
-import { lang } from 'download0/languages'
+import { lang, useImageText, textImageBase } from 'download0/languages'
 import { libc_addr } from 'download0/userland'
 import { fn, BigInt } from 'download0/types'
 
@@ -48,9 +48,9 @@ import { fn, BigInt } from 'download0/types'
   jsmaf.root.children.push(logo)
 
   const menuOptions = [
-    { label: lang.jailbreak, script: 'loader.js', textImg: 'jailbreak_btn_txt.png' },
-    { label: lang.payloadMenu, script: 'payload_host.js', textImg: 'pl_menu_btn_txt.png' },
-    { label: lang.config, script: 'config_ui.js', textImg: 'config_btn_txt.png' }
+    { label: lang.jailbreak, script: 'loader.js', imgKey: 'jailbreak' },
+    { label: lang.payloadMenu, script: 'payload_host.js', imgKey: 'payloadMenu' },
+    { label: lang.config, script: 'config_ui.js', imgKey: 'config' }
   ]
 
   const startY = 450
@@ -83,11 +83,22 @@ import { fn, BigInt } from 'download0/types'
     buttonMarkers.push(marker)
     jsmaf.root.children.push(marker)
 
-    const btnText = new jsmaf.Text()
-    btnText.text = menuOptions[i]!.label
-    btnText.x = btnX + buttonWidth / 2 - 60
-    btnText.y = btnY + buttonHeight / 2 - 12
-    btnText.style = 'white'
+    let btnText: any
+    if (useImageText) {
+      btnText = new Image({
+        url: textImageBase + menuOptions[i]!.imgKey + '.png',
+        x: btnX + 20,
+        y: btnY + 15,
+        width: 300,
+        height: 50
+      })
+    } else {
+      btnText = new jsmaf.Text()
+      btnText.text = menuOptions[i]!.label
+      btnText.x = btnX + buttonWidth / 2 - 60
+      btnText.y = btnY + buttonHeight / 2 - 12
+      btnText.style = 'white'
+    }
     buttonTexts.push(btnText)
     jsmaf.root.children.push(btnText)
 
@@ -119,11 +130,22 @@ import { fn, BigInt } from 'download0/types'
   buttonMarkers.push(exitMarker)
   jsmaf.root.children.push(exitMarker)
 
-  const exitText = new jsmaf.Text()
-  exitText.text = lang.exit
-  exitText.x = exitX + buttonWidth / 2 - 20
-  exitText.y = exitY + buttonHeight / 2 - 12
-  exitText.style = 'white'
+  let exitText: any
+  if (useImageText) {
+    exitText = new Image({
+      url: textImageBase + 'exit.png',
+      x: exitX + 20,
+      y: exitY + 15,
+      width: 300,
+      height: 50
+    })
+  } else {
+    exitText = new jsmaf.Text()
+    exitText.text = lang.exit
+    exitText.x = exitX + buttonWidth / 2 - 20
+    exitText.y = exitY + buttonHeight / 2 - 12
+    exitText.style = 'white'
+  }
   buttonTexts.push(exitText)
   jsmaf.root.children.push(exitText)
 

@@ -213,14 +213,14 @@ try {
     catch(e){
             var config = [
             'var CONFIG = {',
-            '    autolapse: false, ',
-            '    autopoop: false',
-            '    autoclose: false, ',
+            '    autolapse: false,',
+            '    autopoop: false,',
+            '    autoclose: false,',
+            '    jb_behavior: 0',
             '};',
             '',
             'var payloads = [ //to be ran after jailbroken',
-            '    "/mnt/sandbox/download/CUSA00960/payloads/aiofix_network.elf" ',
-            '    // add more payloads here',
+            '    "/mnt/sandbox/download/CUSA00960/payloads/aiofix_network.elf"',
             '];'
         ].join('\n');
         log(e.message)

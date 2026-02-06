@@ -1,7 +1,7 @@
 // Language translations
 // Detected locale: jsmaf.locale
 
-export const lang = {
+export const lang: Record<string, string> = {
   jailbreak: 'Jailbreak',
   payloadMenu: 'Payload Menu',
   config: 'Config',
@@ -10,6 +10,10 @@ export const lang = {
   autoLapse: 'Auto Lapse',
   autoPoop: 'Auto Poop',
   autoClose: 'Auto Close',
+  jbBehavior: 'JB Behavior',
+  jbBehaviorAuto: 'Auto Detect',
+  jbBehaviorNetctrl: 'NetControl',
+  jbBehaviorLapse: 'Lapse',
   totalAttempts: 'Total Attempts: ',
   successes: 'Successes: ',
   failures: 'Failures: ',
@@ -21,8 +25,17 @@ export const lang = {
   configLoaded: 'Config UI loaded'
 }
 
+export let useImageText = false
+export let textImageBase = ''
+
 const detectedLocale = jsmaf.locale || 'en'
 log('Detected locale: ' + detectedLocale)
+
+const IMAGE_TEXT_LOCALES = ['ar', 'ja', 'ko', 'zh']
+if (IMAGE_TEXT_LOCALES.includes(detectedLocale)) {
+  useImageText = true
+  textImageBase = 'file:///../download0/img/text/' + detectedLocale + '/'
+}
 
 switch (detectedLocale) {
   case 'es':
@@ -35,6 +48,10 @@ switch (detectedLocale) {
     lang.autoLapse = 'Auto Lapse'
     lang.autoPoop = 'Auto Poop'
     lang.autoClose = 'Auto Cerrar'
+    lang.jbBehavior = 'Comportamiento JB'
+    lang.jbBehaviorAuto = 'Auto Detectar'
+    lang.jbBehaviorNetctrl = 'NetControl'
+    lang.jbBehaviorLapse = 'Lapse'
     lang.totalAttempts = 'Intentos Totales: '
     lang.successes = 'Exitos: '
     lang.failures = 'Fallos: '
@@ -119,6 +136,10 @@ switch (detectedLocale) {
     lang.autoLapse = 'Auto Lapse'
     lang.autoPoop = 'Auto Poop'
     lang.autoClose = 'Fechar Auto'
+    lang.jbBehavior = 'Comportamento JB'
+    lang.jbBehaviorAuto = 'Auto Detectar'
+    lang.jbBehaviorNetctrl = 'NetControl'
+    lang.jbBehaviorLapse = 'Lapse'
     lang.totalAttempts = 'Total de Tentativas: '
     lang.successes = 'Sucessos: '
     lang.failures = 'Falhas: '
@@ -140,6 +161,10 @@ switch (detectedLocale) {
     lang.autoLapse = 'Auto Lapse'
     lang.autoPoop = 'Auto Poop'
     lang.autoClose = 'Fermer Auto'
+    lang.jbBehavior = 'Comportement JB'
+    lang.jbBehaviorAuto = 'Auto Detecter'
+    lang.jbBehaviorNetctrl = 'NetControl'
+    lang.jbBehaviorLapse = 'Lapse'
     lang.totalAttempts = 'Tentatives Totales: '
     lang.successes = 'Succes: '
     lang.failures = 'Echecs: '
@@ -161,6 +186,10 @@ switch (detectedLocale) {
     lang.autoLapse = 'Auto Lapse'
     lang.autoPoop = 'Auto Poop'
     lang.autoClose = 'Auto Schliessen'
+    lang.jbBehavior = 'JB Verhalten'
+    lang.jbBehaviorAuto = 'Auto Erkennen'
+    lang.jbBehaviorNetctrl = 'NetControl'
+    lang.jbBehaviorLapse = 'Lapse'
     lang.totalAttempts = 'Gesamtversuche: '
     lang.successes = 'Erfolge: '
     lang.failures = 'Fehlschlage: '
@@ -182,6 +211,10 @@ switch (detectedLocale) {
     lang.autoLapse = 'Auto Lapse'
     lang.autoPoop = 'Auto Poop'
     lang.autoClose = 'Chiudi Auto'
+    lang.jbBehavior = 'Comportamento JB'
+    lang.jbBehaviorAuto = 'Auto Rileva'
+    lang.jbBehaviorNetctrl = 'NetControl'
+    lang.jbBehaviorLapse = 'Lapse'
     lang.totalAttempts = 'Tentativi Totali: '
     lang.successes = 'Successi: '
     lang.failures = 'Fallimenti: '
@@ -203,6 +236,10 @@ switch (detectedLocale) {
     lang.autoLapse = 'Auto Lapse'
     lang.autoPoop = 'Auto Poop'
     lang.autoClose = 'Auto Sluiten'
+    lang.jbBehavior = 'JB Gedrag'
+    lang.jbBehaviorAuto = 'Auto Detectie'
+    lang.jbBehaviorNetctrl = 'NetControl'
+    lang.jbBehaviorLapse = 'Lapse'
     lang.totalAttempts = 'Totaal Pogingen: '
     lang.successes = 'Successen: '
     lang.failures = 'Mislukkingen: '
@@ -224,6 +261,10 @@ switch (detectedLocale) {
     lang.autoLapse = 'Auto Lapse'
     lang.autoPoop = 'Auto Poop'
     lang.autoClose = 'Auto Zamknij'
+    lang.jbBehavior = 'Zachowanie JB'
+    lang.jbBehaviorAuto = 'Auto Wykryj'
+    lang.jbBehaviorNetctrl = 'NetControl'
+    lang.jbBehaviorLapse = 'Lapse'
     lang.totalAttempts = 'Laczna Liczba Prob: '
     lang.successes = 'Sukcesy: '
     lang.failures = 'Niepowodzenia: '
@@ -245,6 +286,10 @@ switch (detectedLocale) {
     lang.autoLapse = 'Auto Lapse'
     lang.autoPoop = 'Auto Poop'
     lang.autoClose = 'Otomatik Kapat'
+    lang.jbBehavior = 'JB Davranisi'
+    lang.jbBehaviorAuto = 'Otomatik Algilama'
+    lang.jbBehaviorNetctrl = 'NetControl'
+    lang.jbBehaviorLapse = 'Lapse'
     lang.totalAttempts = 'Toplam Deneme: '
     lang.successes = 'Basarilar: '
     lang.failures = 'Basarisizliklar: '
@@ -254,6 +299,106 @@ switch (detectedLocale) {
     lang.mainMenuLoaded = 'Ana menu yuklendi'
     lang.loadingConfig = 'Ayarlar yukleniyor...'
     lang.configLoaded = 'Ayarlar yuklendi'
+    break
+
+  case 'ar':
+    // Arabic
+    lang.jailbreak = 'Jailbreak'
+    lang.payloadMenu = 'قائمة الحمولات'
+    lang.config = 'الاعدادات'
+    lang.exit = 'خروج'
+    lang.back = 'رجوع'
+    lang.autoLapse = 'Auto Lapse'
+    lang.autoPoop = 'Auto Poop'
+    lang.autoClose = 'اغلاق تلقائي'
+    lang.jbBehavior = 'سلوك JB'
+    lang.jbBehaviorAuto = 'كشف تلقائي'
+    lang.jbBehaviorNetctrl = 'NetControl'
+    lang.jbBehaviorLapse = 'Lapse'
+    lang.totalAttempts = 'اجمالي المحاولات: '
+    lang.successes = 'النجاحات: '
+    lang.failures = 'الاخفاقات: '
+    lang.successRate = 'معدل النجاح: '
+    lang.failureRate = 'معدل الفشل: '
+    lang.loadingMainMenu = 'جاري تحميل القائمة الرئيسية...'
+    lang.mainMenuLoaded = 'تم تحميل القائمة الرئيسية'
+    lang.loadingConfig = 'جاري تحميل الاعدادات...'
+    lang.configLoaded = 'تم تحميل الاعدادات'
+    break
+
+  case 'ja':
+    // Japanese
+    lang.jailbreak = '脱獄'
+    lang.payloadMenu = 'ペイロードメニュー'
+    lang.config = '設定'
+    lang.exit = '終了'
+    lang.back = '戻る'
+    lang.autoLapse = '自動Lapse'
+    lang.autoPoop = '自動Poop'
+    lang.autoClose = '自動終了'
+    lang.jbBehavior = 'JB動作'
+    lang.jbBehaviorAuto = '自動検出'
+    lang.jbBehaviorNetctrl = 'NetControl'
+    lang.jbBehaviorLapse = 'Lapse'
+    lang.totalAttempts = '試行回数: '
+    lang.successes = '成功: '
+    lang.failures = '失敗: '
+    lang.successRate = '成功率: '
+    lang.failureRate = '失敗率: '
+    lang.loadingMainMenu = 'メインメニュー読み込み中...'
+    lang.mainMenuLoaded = 'メインメニュー読み込み完了'
+    lang.loadingConfig = '設定読み込み中...'
+    lang.configLoaded = '設定読み込み完了'
+    break
+
+  case 'ko':
+    // Korean
+    lang.jailbreak = '탈옥'
+    lang.payloadMenu = '페이로드 메뉴'
+    lang.config = '설정'
+    lang.exit = '종료'
+    lang.back = '뒤로'
+    lang.autoLapse = '자동 Lapse'
+    lang.autoPoop = '자동 Poop'
+    lang.autoClose = '자동 닫기'
+    lang.jbBehavior = 'JB 동작'
+    lang.jbBehaviorAuto = '자동 감지'
+    lang.jbBehaviorNetctrl = 'NetControl'
+    lang.jbBehaviorLapse = 'Lapse'
+    lang.totalAttempts = '총 시도: '
+    lang.successes = '성공: '
+    lang.failures = '실패: '
+    lang.successRate = '성공률: '
+    lang.failureRate = '실패율: '
+    lang.loadingMainMenu = '메인 메뉴 로딩중...'
+    lang.mainMenuLoaded = '메인 메뉴 로딩 완료'
+    lang.loadingConfig = '설정 로딩중...'
+    lang.configLoaded = '설정 로딩 완료'
+    break
+
+  case 'zh':
+    // Chinese
+    lang.jailbreak = '越狱'
+    lang.payloadMenu = '载荷菜单'
+    lang.config = '设置'
+    lang.exit = '退出'
+    lang.back = '返回'
+    lang.autoLapse = '自动Lapse'
+    lang.autoPoop = '自动Poop'
+    lang.autoClose = '自动关闭'
+    lang.jbBehavior = 'JB行为'
+    lang.jbBehaviorAuto = '自动检测'
+    lang.jbBehaviorNetctrl = 'NetControl'
+    lang.jbBehaviorLapse = 'Lapse'
+    lang.totalAttempts = '总尝试次数: '
+    lang.successes = '成功: '
+    lang.failures = '失败: '
+    lang.successRate = '成功率: '
+    lang.failureRate = '失败率: '
+    lang.loadingMainMenu = '正在加载主菜单...'
+    lang.mainMenuLoaded = '主菜单已加载'
+    lang.loadingConfig = '正在加载设置...'
+    lang.configLoaded = '设置已加载'
     break
 
   case 'en':

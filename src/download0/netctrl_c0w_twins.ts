@@ -1273,7 +1273,7 @@ function trigger_ucred_triplefree () {
     setuid(1)
 
     // Reclaim the file descriptor.
-    const uaf_socket = Number(socket(AF_UNIX, SOCK_STREAM, 0))
+    uaf_socket = Number(socket(AF_UNIX, SOCK_STREAM, 0))
 
     // Free the previous ucred. Now uafSock's cr_refcnt of f_cred is 1.
     setuid(1)

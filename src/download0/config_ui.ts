@@ -1,6 +1,6 @@
 import { libc_addr } from 'download0/userland'
 import { stats } from 'download0/stats-tracker'
-import { lang } from 'download0/languages'
+import { lang, useImageText, textImageBase } from 'download0/languages'
 
 if (typeof libc_addr === 'undefined') {
   include('userland.js')
@@ -37,11 +37,20 @@ if (typeof lang === 'undefined') {
     }
   }
 
-  const currentConfig = {
+  const currentConfig: {
+    autolapse: boolean
+    autopoop: boolean
+    autoclose: boolean
+    jb_behavior: number
+  } = {
     autolapse: false,
     autopoop: false,
-    autoclose: false
+    autoclose: false,
+    jb_behavior: 0
   }
+
+  const jbBehaviorLabels = [lang.jbBehaviorAuto, lang.jbBehaviorNetctrl, lang.jbBehaviorLapse]
+  const jbBehaviorImgKeys = ['jbBehaviorAuto', 'jbBehaviorNetctrl', 'jbBehaviorLapse']
 
   let currentButton = 0
   const buttons: Image[] = []
@@ -77,12 +86,23 @@ if (typeof lang === 'undefined') {
   })
   jsmaf.root.children.push(logo)
 
-  const title = new jsmaf.Text()
-  title.text = lang.config
-  title.x = 910
-  title.y = 120
-  title.style = 'title'
-  jsmaf.root.children.push(title)
+  if (useImageText) {
+    const title = new Image({
+      url: textImageBase + 'config.png',
+      x: 860,
+      y: 100,
+      width: 200,
+      height: 60
+    })
+    jsmaf.root.children.push(title)
+  } else {
+    const title = new jsmaf.Text()
+    title.text = lang.config
+    title.x = 910
+    title.y = 120
+    title.style = 'title'
+    jsmaf.root.children.push(title)
+  }
 
   // Include the stats tracker
   include('stats-tracker.js')
@@ -92,28 +112,43 @@ if (typeof lang === 'undefined') {
   const statsData = stats.get()
 
   // Create text elements for each stat
-  const statsToDisplay = [
-    lang.totalAttempts + statsData.total,
-    lang.successes + statsData.success,
-    lang.failures + statsData.failures,
-    lang.successRate + statsData.successRate,
-    lang.failureRate + statsData.failureRate
-  ]
+  const statsImgKeys = ['totalAttempts', 'successes', 'failures', 'successRate', 'failureRate']
+  const statsValues = [statsData.total, statsData.success, statsData.failures, statsData.successRate, statsData.failureRate]
+  const statsLabels = [lang.totalAttempts, lang.successes, lang.failures, lang.successRate, lang.failureRate]
 
   // Display each stat line
-  for (let i = 0; i < statsToDisplay.length; i++) {
-    const lineText = new jsmaf.Text()
-    lineText.text = statsToDisplay[i]!
-    lineText.x = 20
-    lineText.y = 120 + (i * 20)
-    lineText.style = 'white'
-    jsmaf.root.children.push(lineText)
+  for (let i = 0; i < statsImgKeys.length; i++) {
+    const yPos = 120 + (i * 25)
+    if (useImageText) {
+      const labelImg = new Image({
+        url: textImageBase + statsImgKeys[i] + '.png',
+        x: 20,
+        y: yPos,
+        width: 180,
+        height: 25
+      })
+      jsmaf.root.children.push(labelImg)
+      const valueText = new jsmaf.Text()
+      valueText.text = String(statsValues[i])
+      valueText.x = 210
+      valueText.y = yPos
+      valueText.style = 'white'
+      jsmaf.root.children.push(valueText)
+    } else {
+      const lineText = new jsmaf.Text()
+      lineText.text = statsLabels[i] + statsValues[i]
+      lineText.x = 20
+      lineText.y = yPos
+      lineText.style = 'white'
+      jsmaf.root.children.push(lineText)
+    }
   }
 
   const configOptions = [
-    { key: 'autolapse', label: lang.autoLapse, textImg: 'auto_lapse_btn_txt.png' },
-    { key: 'autopoop', label: lang.autoPoop, textImg: 'auto_poop_btn_txt.png' },
-    { key: 'autoclose', label: lang.autoClose, textImg: 'auto_close_btn_txt.png' }
+    { key: 'autolapse', label: lang.autoLapse, imgKey: 'autoLapse', type: 'toggle' },
+    { key: 'autopoop', label: lang.autoPoop, imgKey: 'autoPoop', type: 'toggle' },
+    { key: 'autoclose', label: lang.autoClose, imgKey: 'autoClose', type: 'toggle' },
+    { key: 'jb_behavior', label: lang.jbBehavior, imgKey: 'jbBehavior', type: 'cycle' }
   ]
 
   const centerX = 960
@@ -139,23 +174,55 @@ if (typeof lang === 'undefined') {
 
     buttonMarkers.push(null)
 
-    const btnText = new jsmaf.Text()
-    btnText.text = configOption.label
-    btnText.x = btnX + 30
-    btnText.y = btnY + 28
-    btnText.style = 'white'
+    let btnText: any
+    if (useImageText) {
+      btnText = new Image({
+        url: textImageBase + configOption.imgKey + '.png',
+        x: btnX + 20,
+        y: btnY + 15,
+        width: 200,
+        height: 50
+      })
+    } else {
+      btnText = new jsmaf.Text()
+      btnText.text = configOption.label
+      btnText.x = btnX + 30
+      btnText.y = btnY + 28
+      btnText.style = 'white'
+    }
     buttonTexts.push(btnText)
     jsmaf.root.children.push(btnText)
 
-    const checkmark = new Image({
-      url: currentConfig[configOption.key as keyof typeof currentConfig] ? 'file:///assets/img/check_small_on.png' : 'file:///assets/img/check_small_off.png',
-      x: btnX + 320,
-      y: btnY + 20,
-      width: 40,
-      height: 40
-    })
-    valueTexts.push(checkmark)
-    jsmaf.root.children.push(checkmark)
+    if (configOption.type === 'toggle') {
+      const checkmark = new Image({
+        url: currentConfig[configOption.key as keyof typeof currentConfig] ? 'file:///assets/img/check_small_on.png' : 'file:///assets/img/check_small_off.png',
+        x: btnX + 320,
+        y: btnY + 20,
+        width: 40,
+        height: 40
+      })
+      valueTexts.push(checkmark)
+      jsmaf.root.children.push(checkmark)
+    } else {
+      let valueLabel: any
+      if (useImageText) {
+        valueLabel = new Image({
+          url: textImageBase + jbBehaviorImgKeys[currentConfig.jb_behavior] + '.png',
+          x: btnX + 230,
+          y: btnY + 15,
+          width: 150,
+          height: 50
+        })
+      } else {
+        valueLabel = new jsmaf.Text()
+        valueLabel.text = jbBehaviorLabels[currentConfig.jb_behavior] || jbBehaviorLabels[0]!
+        valueLabel.x = btnX + 250
+        valueLabel.y = btnY + 28
+        valueLabel.style = 'white'
+      }
+      valueTexts.push(valueLabel as any)
+      jsmaf.root.children.push(valueLabel)
+    }
 
     buttonOrigPos.push({ x: btnX, y: btnY })
     textOrigPos.push({ x: btnText.x, y: btnText.y })
@@ -185,11 +252,22 @@ if (typeof lang === 'undefined') {
   buttonMarkers.push(backMarker)
   jsmaf.root.children.push(backMarker)
 
-  const backText = new jsmaf.Text()
-  backText.text = lang.back
-  backText.x = backX + buttonWidth / 2 - 20
-  backText.y = backY + buttonHeight / 2 - 12
-  backText.style = 'white'
+  let backText: any
+  if (useImageText) {
+    backText = new Image({
+      url: textImageBase + 'back.png',
+      x: backX + 20,
+      y: backY + 15,
+      width: 200,
+      height: 50
+    })
+  } else {
+    backText = new jsmaf.Text()
+    backText.text = lang.back
+    backText.x = backX + buttonWidth / 2 - 20
+    backText.y = backY + buttonHeight / 2 - 12
+    backText.style = 'white'
+  }
   buttonTexts.push(backText)
   jsmaf.root.children.push(backText)
 
@@ -321,15 +399,24 @@ if (typeof lang === 'undefined') {
     const valueText = valueTexts[index]
     if (!options || !valueText) return
     const key = options.key
-    const value = currentConfig[key as keyof typeof currentConfig]
-    valueText.url = value ? 'file:///assets/img/check_small_on.png' : 'file:///assets/img/check_small_off.png'
+    if (options.type === 'toggle') {
+      const value = currentConfig[key as keyof typeof currentConfig]
+      valueText.url = value ? 'file:///assets/img/check_small_on.png' : 'file:///assets/img/check_small_off.png'
+    } else {
+      if (useImageText) {
+        (valueText as any).url = textImageBase + jbBehaviorImgKeys[currentConfig.jb_behavior] + '.png'
+      } else {
+        (valueText as any).text = jbBehaviorLabels[currentConfig.jb_behavior] || jbBehaviorLabels[0]
+      }
+    }
   }
 
   function saveConfig () {
     let configContent = 'const CONFIG = {\n'
-    configContent += '    autolapse: ' + currentConfig.autolapse + ', \n'
+    configContent += '    autolapse: ' + currentConfig.autolapse + ',\n'
     configContent += '    autopoop: ' + currentConfig.autopoop + ',\n'
-    configContent += '    autoclose: ' + currentConfig.autoclose + '\n'
+    configContent += '    autoclose: ' + currentConfig.autoclose + ',\n'
+    configContent += '    jb_behavior: ' + currentConfig.jb_behavior + '\n'
     configContent += '};\n\n'
     configContent += 'const payloads = [ //to be ran after jailbroken\n'
     configContent += '    "/mnt/sandbox/download/CUSA00960/payloads/aiofix_network.elf"\n'
@@ -357,6 +444,7 @@ if (typeof lang === 'undefined') {
           currentConfig.autolapse = CONFIG.autolapse || false
           currentConfig.autopoop = CONFIG.autopoop || false
           currentConfig.autoclose = CONFIG.autoclose || false
+          currentConfig.jb_behavior = CONFIG.jb_behavior || 0
 
           for (let i = 0; i < configOptions.length; i++) {
             updateValueText(i)
@@ -378,30 +466,38 @@ if (typeof lang === 'undefined') {
         log('ERROR loading main-menu.js: ' + (e as Error).message)
       }
     } else if (currentButton < configOptions.length) {
-      const key = configOptions[currentButton]!.key
-      currentConfig[key as keyof typeof currentConfig] = !currentConfig[key as keyof typeof currentConfig]
+      const option = configOptions[currentButton]!
+      const key = option.key
 
-      if (key === 'autolapse' && currentConfig[key] === true) {
-        currentConfig.autopoop = false
-        for (let i = 0; i < configOptions.length; i++) {
-          if (configOptions[i]!.key === 'autopoop') {
-            updateValueText(i)
-            break
+      if (option.type === 'cycle') {
+        currentConfig.jb_behavior = (currentConfig.jb_behavior + 1) % jbBehaviorLabels.length
+        log(key + ' = ' + jbBehaviorLabels[currentConfig.jb_behavior])
+      } else {
+        (currentConfig as any)[key] = !(currentConfig as any)[key]
+
+        if (key === 'autolapse' && currentConfig.autolapse === true) {
+          currentConfig.autopoop = false
+          for (let i = 0; i < configOptions.length; i++) {
+            if (configOptions[i]!.key === 'autopoop') {
+              updateValueText(i)
+              break
+            }
           }
-        }
-        log('autopoop disabled (autolapse enabled)')
-      } else if (key === 'autopoop' && currentConfig[key] === true) {
-        currentConfig.autolapse = false
-        for (let i = 0; i < configOptions.length; i++) {
-          if (configOptions[i]!.key === 'autolapse') {
-            updateValueText(i)
-            break
+          log('autopoop disabled (autolapse enabled)')
+        } else if (key === 'autopoop' && currentConfig.autopoop === true) {
+          currentConfig.autolapse = false
+          for (let i = 0; i < configOptions.length; i++) {
+            if (configOptions[i]!.key === 'autolapse') {
+              updateValueText(i)
+              break
+            }
           }
+          log('autolapse disabled (autopoop enabled)')
         }
-        log('autolapse disabled (autopoop enabled)')
+
+        log(key + ' = ' + (currentConfig as any)[key])
       }
 
-      log(key + ' = ' + currentConfig[key as keyof typeof currentConfig])
       updateValueText(currentButton)
       saveConfig()
     }
