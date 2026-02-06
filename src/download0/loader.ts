@@ -136,42 +136,49 @@ if (!is_jailbroken) {
   stats.incrementTotal()
   utils.notify(FW_VERSION + ' Detected!')
 
+  let use_lapse = false
+
   if (jb_behavior === 1) {
     log('JB Behavior: NetControl (forced)')
     include('netctrl_c0w_twins.js')
   } else if (jb_behavior === 2) {
     log('JB Behavior: Lapse (forced)')
+    use_lapse = true
     lapse()
   } else {
     log('JB Behavior: Auto Detect')
     if (compare_version(FW_VERSION, '8.00') >= 0 && compare_version(FW_VERSION, '12.02') <= 0) {
+      use_lapse = true
       lapse()
     } else if (compare_version(FW_VERSION, '12.52') >= 0 && compare_version(FW_VERSION, '13.00') <= 0) {
       include('netctrl_c0w_twins.js')
     }
   }
 
-  const start_time = Date.now()
-  const max_wait_seconds = 5
-  const max_wait_ms = max_wait_seconds * 1000
+  // Only wait for lapse - netctrl handles its own completion
+  if (use_lapse) {
+    const start_time = Date.now()
+    const max_wait_seconds = 5
+    const max_wait_ms = max_wait_seconds * 1000
 
-  while (!is_exploit_complete()) {
-    const elapsed = Date.now() - start_time
+    while (!is_exploit_complete()) {
+      const elapsed = Date.now() - start_time
 
-    if (elapsed > max_wait_ms) {
-      log('ERROR: Timeout waiting for exploit to complete (' + max_wait_seconds + ' seconds)')
-      throw new Error('Lapse timeout')
+      if (elapsed > max_wait_ms) {
+        log('ERROR: Timeout waiting for exploit to complete (' + max_wait_seconds + ' seconds)')
+        throw new Error('Lapse timeout')
+      }
+
+      // Poll every 500ms
+      const poll_start = Date.now()
+      while (Date.now() - poll_start < 500) {
+        // Busy wait
+      }
     }
-
-    // Poll every 500ms
-    const poll_start = Date.now()
-    while (Date.now() - poll_start < 500) {
-      // Busy wait
-    }
+    show_success()
+    const total_wait = ((Date.now() - start_time) / 1000).toFixed(1)
+    log('Exploit completed successfully after ' + total_wait + ' seconds')
   }
-  show_success()
-  const total_wait = ((Date.now() - start_time) / 1000).toFixed(1)
-  log('Exploit completed successfully after ' + total_wait + ' seconds')
 } else {
   utils.notify('Already Jailbroken!')
   include('main-menu.js')
