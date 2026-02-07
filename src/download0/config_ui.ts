@@ -419,7 +419,6 @@ if (typeof lang === 'undefined') {
     configContent += '    jb_behavior: ' + currentConfig.jb_behavior + '\n'
     configContent += '};\n\n'
     configContent += 'const payloads = [ //to be ran after jailbroken\n'
-    configContent += '    "/mnt/sandbox/download/CUSA00960/payloads/aiofix_network.elf"\n'
     configContent += '];\n'
 
     fs.write('config.js', configContent, function (err) {
