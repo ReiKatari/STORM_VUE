@@ -706,7 +706,7 @@ export function binloader_init () {
       }
     }
 
-    if (use_lapse) {
+    if (lapse_ran) {
       bl_load_from_file('/mnt/sandbox/download/CUSA00960/payloads/aiofix_network.elf', true)
     }
     // Priority 1: Check for USB payload on usb0-usb4 (like BD-JB does)
