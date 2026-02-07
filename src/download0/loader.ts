@@ -186,7 +186,6 @@ if (!is_jailbroken) {
     try {
       binloader_init()
       log('Binloader initialized and running!')
-   
     } catch (e) {
       log('ERROR: Failed to initialize binloader')
       log('Error message: ' + (e as Error).message)
