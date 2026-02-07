@@ -96,6 +96,8 @@ const TCP_INFO = 32
 const TCPS_ESTABLISHED = 4
 const size_tcp_info = 0xec  /* struct tcp_info */
 
+var lapse_ran = true
+
 // Create shorthand references
 fn.register(42, 'pipe', ['bigint'], 'bigint')
 const pipe = fn.pipe
