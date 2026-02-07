@@ -735,60 +735,63 @@ function setup () {
 function cleanup (kill_workers = false) {
   debug('Cleaning up...')
 
-  // Close all files.
-  for (let i = 0; i < ipv6_socks.length; i++) {
-    close(ipv6_socks[i])
-  }
+  // TODO: Closing sockets/pipes hangs - workers blocked on read
+  // Skipping cleanup for now until we find a proper solution
 
-  close(new BigInt(uio_sock_1))
-  close(new BigInt(uio_sock_0))
-  close(new BigInt(iov_sock_1))
-  close(new BigInt(iov_sock_0))
+  // // Close all files.
+  // for (let i = 0; i < ipv6_socks.length; i++) {
+  //   close(ipv6_socks[i])
+  // }
+
+  // close(new BigInt(uio_sock_1))
+  // close(new BigInt(uio_sock_0))
+  // close(new BigInt(iov_sock_1))
+  // close(new BigInt(iov_sock_0))
 
   // if (uaf_socket !== undefined) {
   //   close(new BigInt(uaf_socket)) // hangs
   // }
 
-  for (let i = 0; i < IOV_THREAD_NUM; i++) {
-    const worker = iov_recvmsg_workers[i]
-    if (worker !== undefined) {
-      if (kill_workers && worker.thread_id !== undefined) {
-        thr_kill(worker.thread_id, 9) // SIGKILL
-      }
-      close(new BigInt(worker.pipe_0))
-      close(new BigInt(worker.pipe_1))
-    }
-  }
+  // for (let i = 0; i < IOV_THREAD_NUM; i++) {
+  //   const worker = iov_recvmsg_workers[i]
+  //   if (worker !== undefined) {
+  //     if (kill_workers && worker.thread_id !== undefined) {
+  //       thr_kill(worker.thread_id, 9) // SIGKILL
+  //     }
+  //     close(new BigInt(worker.pipe_0))
+  //     close(new BigInt(worker.pipe_1))
+  //   }
+  // }
 
-  for (let i = 0; i < UIO_THREAD_NUM; i++) {
-    const worker = uio_readv_workers[i]
-    if (worker !== undefined) {
-      if (kill_workers && worker.thread_id !== undefined) {
-        thr_kill(worker.thread_id, 9) // SIGKILL
-      }
-      close(new BigInt(worker.pipe_0))
-      close(new BigInt(worker.pipe_1))
-    }
-  }
+  // for (let i = 0; i < UIO_THREAD_NUM; i++) {
+  //   const worker = uio_readv_workers[i]
+  //   if (worker !== undefined) {
+  //     if (kill_workers && worker.thread_id !== undefined) {
+  //       thr_kill(worker.thread_id, 9) // SIGKILL
+  //     }
+  //     close(new BigInt(worker.pipe_0))
+  //     close(new BigInt(worker.pipe_1))
+  //   }
+  // }
 
-  for (let i = 0; i < UIO_THREAD_NUM; i++) {
-    const worker = uio_writev_workers[i]
-    if (worker !== undefined) {
-      if (kill_workers && worker.thread_id !== undefined) {
-        thr_kill(worker.thread_id, 9) // SIGKILL
-      }
-      close(new BigInt(worker.pipe_0))
-      close(new BigInt(worker.pipe_1))
-    }
-  }
+  // for (let i = 0; i < UIO_THREAD_NUM; i++) {
+  //   const worker = uio_writev_workers[i]
+  //   if (worker !== undefined) {
+  //     if (kill_workers && worker.thread_id !== undefined) {
+  //       thr_kill(worker.thread_id, 9) // SIGKILL
+  //     }
+  //     close(new BigInt(worker.pipe_0))
+  //     close(new BigInt(worker.pipe_1))
+  //   }
+  // }
 
-  if (spray_ipv6_worker !== undefined) {
-    if (kill_workers && spray_ipv6_worker.thread_id !== undefined) {
-      thr_kill(spray_ipv6_worker.thread_id, 9) // SIGKILL
-    }
-    close(new BigInt(spray_ipv6_worker.pipe_0))
-    close(new BigInt(spray_ipv6_worker.pipe_1))
-  }
+  // if (spray_ipv6_worker !== undefined) {
+  //   if (kill_workers && spray_ipv6_worker.thread_id !== undefined) {
+  //     thr_kill(spray_ipv6_worker.thread_id, 9) // SIGKILL
+  //   }
+  //   close(new BigInt(spray_ipv6_worker.pipe_0))
+  //   close(new BigInt(spray_ipv6_worker.pipe_1))
+  // }
 
   if (prev_core >= 0) {
     debug('Restoring to previous core: ' + prev_core)
