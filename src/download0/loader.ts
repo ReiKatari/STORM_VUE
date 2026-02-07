@@ -186,7 +186,7 @@ if (!is_jailbroken) {
     try {
       binloader_init()
       log('Binloader initialized and running!')
-      log('Starting AIO FIX...')
+   
     } catch (e) {
       log('ERROR: Failed to initialize binloader')
       log('Error message: ' + (e as Error).message)
@@ -208,7 +208,6 @@ export function run_binloader () {
   try {
     binloader_init()
     log('Binloader initialized and running!')
-    log('Starting AIO FIX...')
   } catch (e) {
     log('ERROR: Failed to initialize binloader')
     log('Error message: ' + (e as Error).message)
