@@ -108,11 +108,14 @@ A network connection of any kind is required, before trying to run Vue please co
 # Payloads
 Vue After Free comes preloaded with some payloads. 
 
-## NP-Fake-SignIn
-The np-fake-signin payload gets rid of the first PS Vue pop-up asking you to sign into PSN. 
-In the payloads section of Vue, you will see np-fake-signin-ps4-vue.elf and np-fake-signin-ps4-user.elf. 
-np-fake-signin-ps4-vue.elf should only be used if you are using the system backup provided on this repo. 
-np-fake-signin-ps4-user.elf should be used for any other fake activated user account. 
+## NP-Fake-SignIn  
+The np-fake-signin payload gets rid of the first PS Vue pop-up asking you to sign into PSN.        
+In the payloads section of Vue, you will see np-fake-signin-ps4-vue.elf and np-fake-signin-ps4-user.elf.       
+np-fake-signin-ps4-vue.elf should only be used if you are using the system backup provided on this repo.       
+np-fake-signin-ps4-user.elf should be used for any other fake activated user account.         
+
+> [!IMPORTANT]
+> The np-fake-signin should not be run on a real psn account.
 
 ## FTP 
 The ftp-server.ts payload gives you sandbox FTP to quickly swap exploit or cosmetic files without running a kernel exploit/jailbreaking.
