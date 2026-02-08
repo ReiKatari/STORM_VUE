@@ -147,7 +147,7 @@ if (!is_jailbroken) {
     lapse()
   } else {
     log('JB Behavior: Auto Detect')
-    if (compare_version(FW_VERSION, '8.00') >= 0 && compare_version(FW_VERSION, '12.02') <= 0) {
+    if (compare_version(FW_VERSION, '7.00') >= 0 && compare_version(FW_VERSION, '12.02') <= 0) {
       use_lapse = true
       lapse()
     } else if (compare_version(FW_VERSION, '12.52') >= 0 && compare_version(FW_VERSION, '13.00') <= 0) {
