@@ -59,7 +59,7 @@ Q: Can I run the jailbreak offline? A: No. PS Vue requires any form of network c
 
 # Setup Instructions 
 ## Jailbroken PS4
-A network connection of any kind is required, before trying to run Vue please connect to a local network even if it does not have internet. [Connection Instructions](https://github.com/Vuemony/vue-after-free#connecting-to-the-internet)
+A network connection of any kind is required, before trying to run Vue please connect to a local network even if it does not have internet. [Connection Instructions](https://github.com/Vuemony/vue-after-free?tab=readme-ov-file#connecting-to-the-internet)
   1. Jailbreak your console. 
   2. Enable FTP. 
   3. Install Apollo Save Tool. https://pkg-zone.com/details/APOL00004
@@ -75,7 +75,7 @@ A network connection of any kind is required, before trying to run Vue please co
   13. Optionally after jailbreaking run the [np-fake-signin](https://github.com/Vuemony/vue-after-free/blob/main/README.md#np-fake-signin) payload to avoid the PSN pop-up.
 
 ## Non-Jailbroken PS4
-A network connection of any kind is required, before trying to run Vue please connect to a local network even if it does not have internet. [Connection Instructions](https://github.com/Vuemony/vue-after-free#connecting-to-the-internet)
+A network connection of any kind is required, before trying to run Vue please connect to a local network even if it does not have internet. [Connection Instructions](https://github.com/Vuemony/vue-after-free?tab=readme-ov-file#connecting-to-the-internet)
   1. Format your USB Drive to Exfat. 
 > [!WARNING]
 > This will wipe your drive of all data. Backup any important data. 
