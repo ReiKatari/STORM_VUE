@@ -9,6 +9,8 @@
 
 > PlayStation 4 only.
 
+**Need help or having issues?** [Join the discord](https://discord.gg/asBgEtjjVt)
+
 # Vue After Free Userland
 CVE-2018-4441 was shortly applied but due to instability and bad success rate it was dropped.   
 CVE-2017-7117 is used for the userland, and has been chained with Lapse and Poopsploit(Netctrl) kernel exploits on respective firmwares marked below.
