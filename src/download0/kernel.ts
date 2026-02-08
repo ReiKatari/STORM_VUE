@@ -60,7 +60,7 @@ const kpatch_mmap_offsets: Record<string, [number, number]> = {
   '12.00': [0x1fa71a, 0x1fa71d],
   '12.50': [0x1fa75a, 0x1fa75d],
   '13.00': [0x1fa77a, 0x1fa77d],
-  '13.02': [0x1fa78a, 0x1fa78d],
+  13.02: [0x1fa78a, 0x1fa78d],
 }
 
 const shellcode_fw_map = {
