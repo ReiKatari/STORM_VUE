@@ -113,10 +113,6 @@ A network connection of any kind is required, before trying to run Vue please co
 # Payloads
 Vue After Free comes preloaded with some payloads. 
 
-## NP-Fake-SignIn  
-The np-fake-signin payload gets rid of the first PS Vue pop-up asking you to sign into PSN.        
-In the payloads section of Vue, you will see np-fake-signin-ps4.elf use it on any Apollo Fake activated account while jailbroken and signed into the targed account.      
-
 > [!IMPORTANT]
 > The np-fake-signin should not be run on a real psn account.
 
@@ -141,6 +137,9 @@ Lastly after a successful jailbreak run you can choose to have the application a
 In config.js you can add .bin or .elf files to be loaded automatically on kernel exploit completion. HEN or GoldHEN should not be added there as they are already loaded via USB or from the /data/ directory automatically.       
 Example: '/mnt/sandbox/download/CUSA00960/payloads/kernel_dumper.bin'       
 
+# NP-Fake-SignIn  
+The np-fake-signin payload gets rid of the first PS Vue pop-up asking you to sign into PSN.        
+In the payloads section of Vue enable elfldr, then send np-fake-signin-ps4.elf with a payload sender or netcat.      
 
 # Creating a separate user
 If you wish to use a new account instead of the default one in the system backup.     
