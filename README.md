@@ -4,10 +4,10 @@
 
 <h1 align="center"> Vue-After-Free </h1>
 <p  align="center">
-    A PlayStation Vue userland code execution exploit. 
+    A PlayStation Vue userland code execution exploit for Playstation 4.
 </p>
 
-> PlayStation 4 only.
+
 
 > [!NOTE]
 > **Need help or having issues?** [Join the discord](https://discord.gg/asBgEtjjVt)
