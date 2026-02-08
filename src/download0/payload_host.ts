@@ -30,7 +30,9 @@ import { checkJailbroken } from 'download0/check-jailbroken'
   const buttonMarkers: Image[] = []
   const buttonOrigPos: { x: number, y: number }[] = []
   const textOrigPos: { x: number, y: number }[] = []
-  const fileList: string[] = []
+
+  type FileEntry = { name: string, path: string }
+  const fileList: FileEntry[] = []
 
   const normalButtonImg = 'file:///assets/img/button_over_9.png'
   const selectedButtonImg = 'file:///assets/img/button_over_9.png'
@@ -74,50 +76,66 @@ import { checkJailbroken } from 'download0/check-jailbroken'
   fn.register(0x05, 'open_sys', ['bigint', 'bigint', 'bigint'], 'bigint')
   fn.register(0x06, 'close_sys', ['bigint'], 'bigint')
   fn.register(0x110, 'getdents', ['bigint', 'bigint', 'bigint'], 'bigint')
+  fn.register(0x03, 'read_sys', ['bigint', 'bigint', 'bigint'], 'bigint')
 
-  log('Scanning /download0/payloads for files...')
-  const path_addr = mem.malloc(256)
-  for (let i = 0; i < '/download0/payloads'.length; i++) {
-    mem.view(path_addr).setUint8(i, '/download0/payloads'.charCodeAt(i))
-  }
-  mem.view(path_addr).setUint8('/download0/payloads'.length, 0)
+  const scanPaths = ['/download0/payloads']
 
-  const fd = fn.open_sys(path_addr, new BigInt(0, 0), new BigInt(0, 0))
-  log('open_sys returned: ' + fd.toString())
-
-  if (!fd.eq(new BigInt(0xffffffff, 0xffffffff))) {
-    const buf = mem.malloc(4096)
-    const count = fn.getdents(fd, buf, new BigInt(0, 4096))
-    log('getdents returned: ' + count.toString() + ' bytes')
-
-    if (!count.eq(new BigInt(0xffffffff, 0xffffffff)) && count.lo > 0) {
-      let offset = 0
-      while (offset < count.lo) {
-        const d_reclen = mem.view(buf.add(new BigInt(0, offset + 4))).getUint16(0, true)
-        const d_type = mem.view(buf.add(new BigInt(0, offset + 6))).getUint8(0)
-        const d_namlen = mem.view(buf.add(new BigInt(0, offset + 7))).getUint8(0)
-
-        let name = ''
-        for (let i = 0; i < d_namlen; i++) {
-          name += String.fromCharCode(mem.view(buf.add(new BigInt(0, offset + 8 + i))).getUint8(0))
-        }
-
-        log('Entry: ' + name + ' type=' + d_type + ' namlen=' + d_namlen)
-
-        if (d_type === 8 && name !== '.' && name !== '..') {
-          const lowerName = name.toLowerCase()
-          if (lowerName.endsWith('.elf') || lowerName.endsWith('.bin') || lowerName.endsWith('.js')) {
-            fileList.push(name)
-            log('Added file: ' + name)
-          }
-        }
-
-        offset += d_reclen
-      }
+  if (is_jailbroken) {
+    scanPaths.push('/data/payloads')
+    for (let i = 0; i <= 7; i++) {
+      scanPaths.push('/mnt/usb' + i + '/payloads')
     }
-    fn.close_sys(fd)
-  } else {
-    log('Failed to open /download0/payloads')
+  }
+
+  log('Scanning paths: ' + scanPaths.join(', '))
+
+  const path_addr = mem.malloc(256)
+  const buf = mem.malloc(4096)
+
+  for (const currentPath of scanPaths) {
+    log('Scanning ' + currentPath + ' for files...')
+
+    for (let i = 0; i < currentPath.length; i++) {
+      mem.view(path_addr).setUint8(i, currentPath.charCodeAt(i))
+    }
+    mem.view(path_addr).setUint8(currentPath.length, 0)
+
+    const fd = fn.open_sys(path_addr, new BigInt(0, 0), new BigInt(0, 0))
+    // log('open_sys (' + currentPath + ') returned: ' + fd.toString())
+
+    if (!fd.eq(new BigInt(0xffffffff, 0xffffffff))) {
+      const count = fn.getdents(fd, buf, new BigInt(0, 4096))
+      // log('getdents returned: ' + count.toString() + ' bytes')
+
+      if (!count.eq(new BigInt(0xffffffff, 0xffffffff)) && count.lo > 0) {
+        let offset = 0
+        while (offset < count.lo) {
+          const d_reclen = mem.view(buf.add(new BigInt(0, offset + 4))).getUint16(0, true)
+          const d_type = mem.view(buf.add(new BigInt(0, offset + 6))).getUint8(0)
+          const d_namlen = mem.view(buf.add(new BigInt(0, offset + 7))).getUint8(0)
+
+          let name = ''
+          for (let i = 0; i < d_namlen; i++) {
+            name += String.fromCharCode(mem.view(buf.add(new BigInt(0, offset + 8 + i))).getUint8(0))
+          }
+
+          // log('Entry: ' + name + ' type=' + d_type)
+
+          if (d_type === 8 && name !== '.' && name !== '..') {
+            const lowerName = name.toLowerCase()
+            if (lowerName.endsWith('.elf') || lowerName.endsWith('.bin') || lowerName.endsWith('.js')) {
+              fileList.push({ name, path: currentPath + '/' + name })
+              log('Added file: ' + name + ' from ' + currentPath)
+            }
+          }
+
+          offset += d_reclen
+        }
+      }
+      fn.close_sys(fd)
+    } else {
+      log('Failed to open ' + currentPath)
+    }
   }
 
   log('Total files found: ' + fileList.length)
@@ -133,7 +151,8 @@ import { checkJailbroken } from 'download0/check-jailbroken'
   for (let i = 0; i < fileList.length; i++) {
     const row = Math.floor(i / buttonsPerRow)
     const col = i % buttonsPerRow
-    let displayName = fileList[i]!
+
+    let displayName = fileList[i]!.name
 
     const btnX = startX + col * xSpacing
     const btnY = startY + row * buttonSpacing
@@ -411,19 +430,57 @@ import { checkJailbroken } from 'download0/check-jailbroken'
         if (err.stack) log(err.stack)
       }
     } else if (currentButton < fileList.length) {
-      const selectedFile = fileList[currentButton]
-      if (!selectedFile) {
+      const selectedEntry = fileList[currentButton]
+      if (!selectedEntry) {
         log('No file selected!')
         return
       }
-      const filePath = '/download0/payloads/' + selectedFile
 
-      log('Selected: ' + selectedFile)
+      const filePath = selectedEntry.path
+      const fileName = selectedEntry.name
+
+      log('Selected: ' + fileName + ' from ' + filePath)
 
       try {
-        if (selectedFile.toLowerCase().endsWith('.js')) {
-          log('Including JavaScript file: ' + selectedFile)
-          include('payloads/' + selectedFile)
+        if (fileName.toLowerCase().endsWith('.js')) {
+          // Local JavaScript file case (from /download0/payloads)
+          if (filePath.startsWith('/download0/')) {
+            log('Including JavaScript file: ' + fileName)
+            include('payloads/' + fileName)
+          } else {
+            // External JavaScript file case (from /data/payloads or /mnt/usbX/payloads)
+            log('Reading external JavaScript file: ' + filePath)
+            const p_addr = mem.malloc(256)
+            for (let i = 0; i < filePath.length; i++) {
+              mem.view(p_addr).setUint8(i, filePath.charCodeAt(i))
+            }
+            mem.view(p_addr).setUint8(filePath.length, 0)
+
+            const fd = fn.open_sys(p_addr, new BigInt(0, 0), new BigInt(0, 0))
+
+            if (!fd.eq(new BigInt(0xffffffff, 0xffffffff))) {
+              const buf_size = 1024 * 1024 * 1  // 1 MiB
+              const buf = mem.malloc(buf_size)
+              const read_len = fn.read_sys(fd, buf, new BigInt(0, buf_size))
+
+              fn.close_sys(fd)
+
+              let scriptContent = ''
+              const len = (read_len instanceof BigInt) ? read_len.lo : read_len
+
+              log('File read size: ' + len + ' bytes')
+
+              for (let i = 0; i < len; i++) {
+                scriptContent += String.fromCharCode(mem.view(buf).getUint8(i))
+              }
+
+              log('Executing via eval()...')
+              // eslint-disable-next-line no-eval
+              eval(scriptContent)
+            } else {
+              log('ERROR: Could not open file for reading!')
+            }
+          }
         } else {
           log('Loading binloader.js...')
           include('binloader.js')
