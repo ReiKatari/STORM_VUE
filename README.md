@@ -70,7 +70,7 @@ A network connection of any kind is required, before trying to run Vue please co
   5. Connect to the console with FTP. 
   6. Download the `VueManualSetup.7z` from releases.
   7. Go to the following path with FTP `/user/download/CUSA00960` (create path if needed) and place `download0.dat` there.
-  8. On your USB unpack the save.zip ( or FTP to `/data/fakeusb/` ).
+  8. On your USB unpack the save.zip ( or FTP to `/data/fakeusb/` ). The files will show up in USB Saves as if it is a real USB. It can be toggled in Apollo Settings>USB Saves Sources to be the only thing displayed even while a real USB is plugged in.
   9. In the root of your USB place HEN or GoldHEN named as `payload.bin`. Or place it in `/data/`.
   10. Plug the USB into the console.
   11. In Apollo Save Tool go to USB Saves and select the PS Vue save(CUSA00960) and choose the option "Copy save game to HDD". 
