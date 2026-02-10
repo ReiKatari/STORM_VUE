@@ -28,6 +28,8 @@ export default defineConfig([
   }),
   {
     rules: {
+      quote-props: ['error', 'always']
+
       camelcase: 'off',
       'no-unused-vars': 'off', // jsmaf, log, psn, all defined globally
       'no-var': 'off',
