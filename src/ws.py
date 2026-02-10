@@ -50,7 +50,7 @@ async def command(ws: websockets.ClientConnection):
     loop = asyncio.get_event_loop()
     while ws.state == websockets.protocol.State.OPEN:
         try:
-            cmd = await loop.run_in_executor(None, input, ">")
+            cmd = await loop.run_in_executor(None, input, "> ")
         except (EOFError, KeyboardInterrupt):
             print()
             log_print("[*] Disconnecting...")
@@ -100,7 +100,7 @@ async def main():
                     [receiver_task, command_task],
                     return_when=asyncio.FIRST_COMPLETED,
                 )
-        except Exception:
+        except Exception as e:
             #            log_print(f"[!] Error: {e}")
             #            log_print(f"[*] Retrying in {DELAY} seconds...")
             await asyncio.sleep(DELAY)
