@@ -28,7 +28,7 @@ export default defineConfig([
   }),
   {
     rules: {
-      'quote-props' : ['error', 'always'],
+      'quote-props' : ['error', 'consistent-as-needed'],
 
       camelcase: 'off',
       'no-unused-vars': 'off', // jsmaf, log, psn, all defined globally
