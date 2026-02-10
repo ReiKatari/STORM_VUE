@@ -3,8 +3,8 @@
 
 import argparse
 import asyncio
-import linecache
 import pathlib
+import readline
 from datetime import datetime
 
 import websockets
