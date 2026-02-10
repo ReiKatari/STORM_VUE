@@ -4,7 +4,7 @@
 import argparse
 import asyncio
 import pathlib
-import readline  # noqa: F401
+import readline
 from datetime import datetime, timezone
 
 import websockets
@@ -23,8 +23,7 @@ PORT = args.port
 DELAY = args.delay
 RETRY = True
 
-
-LOG_FILE = f"logs_{datetime.now(timezone.utc).strftime('%H_%M_%S')}_utc.txt"
+LOG_FILE = f"logs_{datetime.now(timezone.utc).strftime('%Y-%m-%d_%H-%M-%S')}_utc.txt"
 CURRENT_ATTEMPT = 1
 IS_NEW_ATTEMPT = True
 ATTEMPT_START_TIME = None
