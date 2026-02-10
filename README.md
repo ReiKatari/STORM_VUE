@@ -13,7 +13,7 @@
 > **Need help or having issues?** [Join the discord](https://discord.gg/asBgEtjjVt)
 
 # Vue After Free Userland
-CVE-2018-4441 was shortly applied but due to instability and bad success rate it was dropped.
+CVE-2018-4441 was shortly applied but due to instability and bad success rate it was dropped.    
 CVE-2017-7117 is used for the userland, and has been chained with Lapse and Poopsploit(Netctrl) kernel exploits on respective firmwares marked below.
 
 > [!IMPORTANT]
@@ -27,7 +27,7 @@ KEX= Kernel Exploit
 
 ## Supported by this Repository
 
-This table indicates firmware versions for which the _current version_ of this repository provides a functional tested jailbreak for.
+This table indicates firmware versions for which the _current version_ of this repository provides a functional tested jailbreak for.   
 
 | 7.00-13.00 |
 | :--------- |
@@ -36,14 +36,18 @@ This table indicates firmware versions for which the _current version_ of this r
 * Userland exploit works 5.05 to 13.02 as is.
 
 # FAQ
-Q: Will this work on 13.02 or above? A: Only the userland, you cannot jailbreak above 13.00 with the files in this repo.
-Q: I ran Vue and the app crashed? A: If the app crashes the exploit failed reboot the console and try again.
-Q: I ran Vue and my console shutdown what do I do? A: If a kernel panic occurred you may need to press the power button on your console twice, then retry running the exploit.
-Q: How can I run a payload? A: Closing and Reopening Vue is required between running js payloads, but .bin or .elf payloads can be run one after the other. Select the payload from the UI in the Payload Menu.
-Q: Can I run the jailbreak offline? A: No. PS Vue requires any form of network connection, internet is not required as such you can use any network like home WiFi or Hotspot from your mobile phone or a network from a micro controller like ESP32 or an Ethernet network from a reporpused PPPwn device.
+Q: Will this work on 13.02 or above? A: Only the userland, you cannot jailbreak above 13.00 with the files in this repo.    
+Q: I ran Vue and the app crashed? A: If the app crashes the exploit failed reboot the console and try again.    
+Q: I ran Vue and my console shutdown what do I do? A: If a kernel panic occurred you may need to press the power button on your console twice, then retry running the exploit.    
+Q: How can I run a payload? A: Closing and Reopening Vue is required between running js payloads, but .bin or .elf payloads can be run one after the other. Select the payload from the UI in the Payload Menu.    
+Q: Can I run the jailbreak offline? A: No. PS Vue requires any form of network connection, internet is not required as such you can use any network like home WiFi or Hotspot from your mobile phone or a network from a micro controller like ESP32 or an Ethernet network from a reporpused PPPwn device.     
+Q: I am getting "This service requires you to sign in to PlayStation Network" even after replacing the save file how can I fix it? A: Your Vue app most likely updated, this usually happens when not using a DNS or blocking Sony servers in general. You will have to delete and reinstall it.      
 
 > [!IMPORTANT]
-> The Vue save file may occasionally reset. To avoid issues please copy the encrypted save to a USB, from the PS4 settings menu for the user that is used to run the jailbreak, for easy future recovery.
+> The Vue save file may occasionally reset. To avoid issues please copy the encrypted save to a USB, from the PS4 settings menu for the user that is used to run the jailbreak, for easy future recovery.   
+
+> [!IMPORTANT]
+> DO NOT change your np environment via Debug Settings, it will cause you to be unable to use a backup save file. And makes it incompatible with the current fake sign in payload. 
 
 ## Requirements
 
@@ -52,13 +56,13 @@ Q: Can I run the jailbreak offline? A: No. PS Vue requires any form of network c
   * FTP access to the console.
   * USB flash drive.
 
-  * PlayStation Vue 1.01 base and 1.24 patch.(Referred to as "PS Vue or Vue" later in the guide). [Download](https://www.mediafire.com/file/45owcabezln2ykm/CUSA00960.zip/file)
+  * PlayStation Vue 1.01 base and 1.24 patch.(Referred to as "PS Vue or Vue" later in the guide). [Download](https://www.mediafire.com/file/45owcabezln2ykm/CUSA00960.zip/file)   
 
 ### For Non-Jailbroken PS4
   * USB flash drive.
   * System backup file.
 > [!WARNING]
-> Restoring the system backup will erase all data on your console, then apply the Vue app and it's exploit data to it.
+> Restoring the system backup will erase all data on your console, then apply the Vue app and it's exploit data to it.   
 
 # Setup Instructions
 ## Jailbroken PS4
@@ -81,7 +85,7 @@ A network connection of any kind is required, before trying to run Vue please co
 A network connection of any kind is required, before trying to run Vue please connect to a local network even if it does not have internet. [Connection Instructions](https://github.com/Vuemony/vue-after-free?tab=readme-ov-file#connecting-to-the-internet)
   1. Format your USB Drive to Exfat.
 > [!WARNING]
-> This will wipe your drive of all data. Backup any important data.
+> This will wipe your drive of all data. Backup any important data.   
   2. Download the `VueSystemBackup.7z` from Releases.
   3. Unpack the contents of the zip onto the USB.
   4. Plug the USB into your console.
@@ -126,9 +130,11 @@ Example code for how you can run userland code with the browser as the UI. (poss
 `elfldr.elf` is used to load elf and bin payloads post exploit when HEN or GoldHEN have not been loaded.
 
 # Config
-Vue comes with a few custom options. Firstly the jailbreak button auto detects firmware and the Lapse exploit from 7.00-12.02, as of 12.50-13.00 it then runs the Netctrl exploit. You can change the defaults in the config menu in the JB Behaviour section.
-Another available option is to automatically launch a kernel exploit upon opening the Vue app. You can choose to either automatically launch Lapse or Netctrl on their respective compatible firmwares. Auto Lapse and Auto Poop.
-Lastly after a successful jailbreak run you can choose to have the application automatically close, the Auto Close option.
+For some config changes to apply the application needs to be closed and opened again.   
+Vue comes with a few custom options. Firstly the jailbreak button auto detects firmware and the Lapse exploit from 7.00-12.02, as of 12.50-13.00 it then runs the Netctrl exploit. You can change the defaults in the config menu in the JB Behaviour section.   
+Another available option is to automatically launch a kernel exploit upon opening the Vue app. You can choose to either automatically launch Lapse or Netctrl on their respective compatible firmwares. Auto Lapse and Auto Poop.    
+After a successful jailbreak run you can choose to have the application automatically close, the Auto Close option.   
+Music can be enabled or disabled.
 
 # Automatic Payloads
 In config.js you can add .bin or .elf files to be loaded automatically on kernel exploit completion. HEN or GoldHEN should not be added there as they are already loaded via USB or from the /data/ directory automatically.
