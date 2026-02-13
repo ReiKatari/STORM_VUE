@@ -41,6 +41,13 @@ jobs:
           cp -r src/download0/vid dist/download0/
           cp src/download0/*.aes dist/download0/
 
+      - name: Generate base64 files for binaries
+        run: |
+          cd dist/download0
+          for f in $(find . -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.elf" -o -name "*.wav" -o -name "*.mp4" -o -name "*.ts" \)); do
+            base64 -w0 "$f" > "${f}.b64"
+          done
+
       - name: Generate manifest
         run: |
           cd dist/download0
