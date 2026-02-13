@@ -7,6 +7,7 @@ import { utils } from 'download0/types'
   var BASE_URL = 'https://vuemony.github.io/vue-after-free/download0/'
   var MANIFEST_URL = BASE_URL + 'manifest.txt'
   var BINARY_EXT = ['.png', '.jpg', '.jpeg', '.gif', '.wav', '.mp3', '.mp4', '.elf', '.bin', '.webm']
+  var EXCLUDE = ['config.js']
 
   var FILES: string[] = []
   var updated = 0
@@ -48,7 +49,7 @@ import { utils } from 'download0/types'
   }
 
   function fetchAndWrite (filename: string) {
-    if (isBinary(filename)) {
+    if (isBinary(filename) || EXCLUDE.indexOf(filename) !== -1) {
       skipped++
       checkDone()
       return
