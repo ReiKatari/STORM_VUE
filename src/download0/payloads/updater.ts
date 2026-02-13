@@ -36,7 +36,10 @@ import { utils } from 'download0/types'
 
     var bg = new Image({
       url: 'file:///assets/img/bg_blue_wave.png',
-      x: 0, y: 0, width: 1920, height: 1080
+      x: 0,
+      y: 0,
+      width: 1920,
+      height: 1080
     })
     jsmaf.root.children.push(bg)
 
