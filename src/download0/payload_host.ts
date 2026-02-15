@@ -200,7 +200,7 @@ import { checkJailbroken } from 'download0/check-jailbroken'
   }
 
   const backHint = new jsmaf.Text()
-  backHint.text = jsmaf.isCircleAdvance ? 'X to go back' : 'O to go back'
+  backHint.text = jsmaf.circleIsAdvanceButton ? 'X to go back' : 'O to go back'
   backHint.x = 890
   backHint.y = 1000
   backHint.style = 'white'
@@ -326,8 +326,8 @@ import { checkJailbroken } from 'download0/check-jailbroken'
     prevButton = currentButton
   }
 
-  const confirmKey = jsmaf.isCircleAdvance ? 13 : 14
-  const backKey = jsmaf.isCircleAdvance ? 14 : 13
+  const confirmKey = jsmaf.circleIsAdvanceButton ? 13 : 14
+  const backKey = jsmaf.circleIsAdvanceButton ? 14 : 13
 
   jsmaf.onKeyDown = function (keyCode) {
     log('Key pressed: ' + keyCode)

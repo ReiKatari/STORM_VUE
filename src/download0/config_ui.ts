@@ -201,7 +201,7 @@ if (typeof lang === 'undefined') {
   }
 
   const backHint = new jsmaf.Text()
-  backHint.text = jsmaf.isCircleAdvance ? 'X to go back' : 'O to go back'
+  backHint.text = jsmaf.circleIsAdvanceButton ? 'X to go back' : 'O to go back'
   backHint.x = centerX - 60
   backHint.y = startY + configOptions.length * buttonSpacing + 120
   backHint.style = 'white'
@@ -449,8 +449,8 @@ if (typeof lang === 'undefined') {
     }
   }
 
-  const confirmKey = jsmaf.isCircleAdvance ? 13 : 14
-  const backKey = jsmaf.isCircleAdvance ? 14 : 13
+  const confirmKey = jsmaf.circleIsAdvanceButton ? 13 : 14
+  const backKey = jsmaf.circleIsAdvanceButton ? 14 : 13
 
   jsmaf.onKeyDown = function (keyCode) {
     if (keyCode === 6 || keyCode === 5) {
