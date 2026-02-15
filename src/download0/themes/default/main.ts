@@ -226,7 +226,7 @@ import { fn, BigInt } from 'download0/types'
     }, step)
   }
 
-  function updateHighlight() {
+  function updateHighlight () {
     // Animate out the previous button
     const prevButtonObj = buttons[prevButton]
     const buttonMarker = buttonMarkers[prevButton]
@@ -274,7 +274,7 @@ import { fn, BigInt } from 'download0/types'
     prevButton = currentButton
   }
 
-  function handleButtonPress() {
+  function handleButtonPress () {
     if (currentButton === buttons.length - 1) {
       log('Exiting application...')
       try {
@@ -309,7 +309,7 @@ import { fn, BigInt } from 'download0/types'
         if (selectedOption.script.includes('loader.js')) {
           include(selectedOption.script)
         } else {
-          include("themes/default/" + selectedOption.script)
+          include('themes/default/' + selectedOption.script)
         }
       } catch (e) {
         log('ERROR loading ' + selectedOption.script + ': ' + (e as Error).message)
