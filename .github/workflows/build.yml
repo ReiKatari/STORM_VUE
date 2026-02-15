@@ -116,6 +116,12 @@ LITECONF
           name: vue-after-free-${{ github.ref_name }}
           path: vue-after-free-${{ github.ref_name }}.zip
 
+      - name: Upload lite dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-lite
+          path: dist-lite/
+
       - name: Upload lite build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -217,3 +223,70 @@ LITECONF
         uses: softprops/action-gh-release@v2
         with:
           files: download0.dat
+
+  ufs-image-lite:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download lite dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-lite
+          path: dist-lite/
+
+      - name: Create lite UFS2 image in FreeBSD
+        uses: vmactions/freebsd-vm@v1
+        with:
+          release: "14.2"
+          copyback: true
+          prepare: ""
+          run: |
+            set -e
+
+            # Create 256MB image file
+            truncate -s 256M download0.dat
+
+            # Attach as memory disk
+            MD=$(mdconfig -a -t vnode -f "$(pwd)/download0.dat")
+
+            # Create UFS2 filesystem
+            newfs -O 2 -b 32768 -f 4096 /dev/${MD}
+
+            # Mount
+            mount /dev/${MD} /mnt
+
+            # Copy lite dist contents
+            cp -R dist-lite/download0/* /mnt/
+
+            # Create empty dirs
+            mkdir -p /mnt/mgl /mnt/video_cache /mnt/xhr_cache
+
+            # Set permissions
+            chmod -R 777 /mnt/*
+
+            # Unmount and detach
+            umount /mnt
+            mdconfig -d -u ${MD}
+
+      - name: Verify image
+        run: file download0.dat
+
+      - name: Zip lite UFS2 image
+        run: zip download0_dat_lite.zip download0.dat
+
+      - name: Upload lite UFS2 image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: download0_dat_lite
+          path: download0_dat_lite.zip
+
+      - name: Delete lite dist artifact
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: dist-lite
+
+      - name: Upload lite UFS2 release asset
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: download0_dat_lite.zip
