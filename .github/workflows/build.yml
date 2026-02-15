@@ -55,22 +55,11 @@ jobs:
 
       - name: Build lite variant
         run: |
-          mkdir -p dist-lite/download0/payloads
-
           # Core runtime JS
           for f in serve.js.aes dummy_psn.json.aes loader.js userland.js types.js kernel.js \
                    lapse.js netctrl_c0w_twins.js binloader.js check-jailbroken.js defs.js; do
             cp dist/download0/$f dist-lite/download0/
           done
-
-          # Payloads
-          cp dist/download0/payloads/*.elf dist-lite/download0/payloads/ 2>/dev/null || true
-          cp dist/download0/payloads/*.bin dist-lite/download0/payloads/ 2>/dev/null || true
-
-          # Minimal images (logo, background)
-          mkdir -p dist-lite/download0/img
-          cp dist/download0/img/logo.png dist-lite/download0/img/
-          cp dist/download0/img/multiview_bg_VAF.png dist-lite/download0/img/
 
           # Hardcoded lite config - auto detect, auto close, no music, no menus
           printf 'var CONFIG = {\n    autolapse: true,\n    autopoop: false,\n    autoclose: true,\n    autoclose_delay: 0,\n    music: false,\n    jb_behavior: 0\n};\nvar payloads = [];\n' > dist-lite/download0/config.js
