@@ -492,8 +492,8 @@ export function binloader_init () {
           log('Current PID: ' + pid_num)
 
           if (closeDelay > 0) {
-            log('CONFIG.autoclose enabled - closing in ' + (closeDelay / 1000) + ' seconds...')
-            utils.notify('Auto close in ' + (closeDelay / 1000) + ' seconds...')
+            log('CONFIG.autoclose enabled - closing after ' + (closeDelay / 1000) + ' seconds...')
+            utils.notify('Vue will close after ' + (closeDelay / 1000) + ' seconds...')
             const killId = jsmaf.setInterval(function () {
               jsmaf.clearInterval(killId)
               log('Sending SIGKILL to PID ' + pid_num)
