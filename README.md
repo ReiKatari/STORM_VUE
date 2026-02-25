@@ -124,7 +124,7 @@ A network connection of any kind is required, before trying to run Vue please co
   13. Install PS Vue from your package installer, make sure `Background Installation` is off press on yes when it asks if you want to install it again (only for 1.01) then install the 1.24 patch. 
   14. Reboot your console then open PS Vue you will be told "This service requires you to sign in to PlayStation Network" press OK to continue, run the exploit by pressing on the jailbreak button or configure the autoloader and auto close. Note if using HEN before setting up Auto Close please edit the config.js and add 20 seconds to the close delay by writing `20000`. 
   * Backup the current save file to a USB via the console settings. Resign an `OnlineSave` in case of exploit file corruption.
-  15. Optionally after jailbreaking run the [np-fake-signin](https://github.com/Vuemony/vue-after-free/blob/main/README.md#np-fake-signin) payload to avoid the PSN pop-up.
+  15. Optionally after jailbreaking run the [np-fake-signin](https://github.com/Vuemony/vue-after-free/blob/main/README.md#np-fake-signin) payload to avoid the PSN pop-up. Lastly in this repo in src/icon is the Vue custom icon. If you'd like to set it up FTP to /user/appmeta/CUSA00960 delete icon0.png and place the one from this repo there, then reboot the console.
 
 ## For Non-Jailbroken PS4 Extended Storage and Save Resign
 ### Extended Storage Setup 
@@ -201,6 +201,7 @@ If you wish to use a new account instead of the default one in the system backup
   2. Fake activate it with Apollo Save Tool from User Tools>Activate PS4 Accounts. (optionally with the Account ID you want) then Reboot the console.
   3. On your USB unpack the save.zip from the VueManualSetup.zip in Releases.
   4. In Apollo Save Tool go to USB Saves and select the PS Vue save(CUSA00960) and choose the option "Copy save game to HDD".
+  
 
 ### Updating Vue Exploit
   1. Download the `VueManualSetup.7z` and replace download0.dat in `/user/download/CUSA000960/` and delete download0_info.dat with FTP while jailbroken.
