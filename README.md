@@ -41,7 +41,7 @@ Only the userland, you cannot jailbreak above 13.00 with the files in this repo.
 You need any form of a network connection, not specifically internet. You can use your mobile phone hotspot or anyting else available. Vue will not launch the exploit without a network connection and will display "There was a problem connecting to the internet". Please see [Connection Instructions](https://github.com/Vuemony/vue-after-free?tab=readme-ov-file#connecting-to-the-internet). 
 
 **Q: I am getting "There is a network communication issue" error.**
-This indicates that either Vue has updated or your save file has reset. Use your own profile backup's save, or if using the system backup from this repo, unpack the `encryptedsavebackup.zip` to a USB and import it with the PS4 saved data management. Or if all the internal data is gone you can use the `OnlineSave` that is signed to VueUser to enable the jailbreak again, or resign it to your account. It is recommended to keep a copy of it which is signed to your main user or a spare user. For more specific instructions see the 
+This indicates that either Vue has updated or your save file has reset. Use your own profile backup's save, or if using the system backup from this repo, unpack the `encryptedsavebackup.zip` to a USB and import it with the PS4 saved data management. Or if all the internal data is gone you can use the `OnlineSave` that is signed to VueUser to enable the jailbreak again, or resign it to your account. It is recommended to keep a copy of it which is signed to your main user or a spare user. For more specific instructions see the [Gettting the jailbreak again](https://github.com/Vuemony/vue-after-free#getting-the-jailbreak-again) section.
 
 **Q: I am getting "This service requires you to sign in to PlayStation Network" even after replacing the save file, how can I fix it?**
 Your Vue app most likely updated. This usually happens when not using a DNS or blocking Sony servers. You will have to delete and reinstall it. You can use the Extended storage method to do that. 
@@ -195,15 +195,6 @@ A network connection of any kind is required, before trying to run Vue please co
 > If you get an IP Address but do not get an internet connection then the 62.210... DNS is working. IF you get a successful internet connection it has failed to apply due to limitations in your local network. Please use the 127.0.0.2 DNS.
 * The internet connection failing does not indicate that it actually cannot connect to the internet, it just means the PS4 cannot communicate with Sony servers which is the point of the DNS.
 
-# Getting the jailbreak again
-On occasion your Vue app may update or your save data may reset or your exploit data corrupts. This will make you unable to jailbreak but it is fixable.
-If Vue updated or you accidentally deleted it. 
-  1. Make sure the app is currently deleted if it updated. 
-  2. Rebuild your database in safe mode.
-  3. Follow the [Extended Storage Setup](https://github.com/Vuemony/vue-after-free#extended-storage-setup) to get it back.
-  4. Use the `OnlineSave` by either importing it or resigning it to your current account. Then launch Vue while you have a real internet connection see [Connection Instructions](https://github.com/Vuemony/vue-after-free?tab=readme-ov-file#connecting-to-the-internet).
-  5. Rebuild the FPKG database by following the guide here [Rebuilding FPKG Database](https://consolemods.org/wiki/PS4:Rebuilding_FPKG_Database)
-
 ### Creating a separate user
 If you wish to use a new account instead of the default one in the system backup.
   1. Create a new user.
@@ -216,6 +207,15 @@ If you wish to use a new account instead of the default one in the system backup
 
 ### Updating Vue Exploit to Lite 
 1. Download the `VueManualLite.7z` and replace download0.dat in `/user/download/CUSA000960/` and delete download0_info.dat with FTP while jailbroken.
+
+# Getting the jailbreak again
+On occasion your Vue app may update or your save data may reset or your exploit data corrupts. This will make you unable to jailbreak but it is fixable.
+If Vue updated or you accidentally deleted it. 
+  1. Make sure the app is currently deleted if it updated. 
+  2. Rebuild your database in safe mode.
+  3. Follow the [Extended Storage Setup](https://github.com/Vuemony/vue-after-free#extended-storage-setup) to get it back.
+  4. Use the `OnlineSave` by either importing it or resigning it to your current account. Then launch Vue while you have a real internet connection see [Connection Instructions](https://github.com/Vuemony/vue-after-free?tab=readme-ov-file#connecting-to-the-internet).
+  5. Rebuild the FPKG database by following the guide here [Rebuilding FPKG Database](https://consolemods.org/wiki/PS4:Rebuilding_FPKG_Database)
 
 # Payloads
 Vue After Free comes preloaded with some payloads.
