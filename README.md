@@ -240,7 +240,7 @@ The np-fake-signin payload gets rid of the first PS Vue pop-up asking you to sig
 The update.js payload allows you to grab the latest files in the repo without needing to reinstall anything. Only works for normal UI version not for Lite mode.  
 
 # Themes 
-
+Themes can be added my simply copying the folder to `/download0/themes/` the default theme provides a good example of how a theme should be written.
 # Credits
 
 - [c0w-ar](https://github.com/c0w-ar/) — Lapse and NetCtrl porting  , Reverse Engineering
