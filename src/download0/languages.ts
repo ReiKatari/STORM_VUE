@@ -25,7 +25,11 @@ export const lang: Record<string, string> = {
 export let useImageText = false
 export let textImageBase = ''
 
-const detectedLocale = jsmaf.locale || 'en'
+let detectedLocale = jsmaf.locale
+if (!detectedLocale) {
+  detectedLocale = 'ar' 
+}
+
 log('Detected locale: ' + detectedLocale)
 
 const IMAGE_TEXT_LOCALES = ['ar', 'ja', 'ko', 'zh']
@@ -56,54 +60,6 @@ switch (detectedLocale) {
     lang.configLoaded = 'Configuracion cargada'
     lang.theme = 'Tema'
     break
-    // vue doesnt have these locales in the fonts for asian and arabic languages. need to figure out how to load custom font . please reference /app0/assets/font/ for examples
-    // ~ case 'ar':
-    // ~ // Arabic
-    // ~ lang.jailbreak = 'Jailbreak'
-    // ~ lang.payloadMenu = 'قائمة الحمولة'
-    // ~ lang.config = 'الاعدادات'
-    // ~ lang.exit = 'خروج'
-    // ~ lang.back = 'رجوع'
-    // ~ lang.autoLapse = 'Auto Lapse'
-    // ~ lang.autoPoop = 'Auto Poop'
-    // ~ lang.autoClose = 'اغلاق تلقائي'
-    // ~ lang.loadingMainMenu = '...جاري تحميل القائمة الرئيسية'
-    // ~ lang.mainMenuLoaded = 'تم تحميل القائمة الرئيسية'
-    // ~ lang.loadingConfig = '...جاري تحميل الاعدادات'
-    // ~ lang.configLoaded = 'تم تحميل الاعدادات'
-    // ~ break
-
-    // ~ case 'ko':
-    // ~ // Korean
-    // ~ lang.jailbreak = '탈옥'
-    // ~ lang.payloadMenu = '페이로드 메뉴'
-    // ~ lang.config = '설정'
-    // ~ lang.exit = '종료'
-    // ~ lang.back = '뒤로'
-    // ~ lang.autoLapse = '자동 Lapse'
-    // ~ lang.autoPoop = '자동 Poop'
-    // ~ lang.autoClose = '자동 닫기'
-    // ~ lang.loadingMainMenu = '메인 메뉴 로딩중...'
-    // ~ lang.mainMenuLoaded = '메인 메뉴 로딩 완료'
-    // ~ lang.loadingConfig = '설정 로딩중...'
-    // ~ lang.configLoaded = '설정 로딩 완료'
-    // ~ break
-
-    // ~ case 'ja':
-    // ~ // Japanese
-    // ~ lang.jailbreak = '脱獄'
-    // ~ lang.payloadMenu = 'ペイロードメニュー'
-    // ~ lang.config = '設定'
-    // ~ lang.exit = '終了'
-    // ~ lang.back = '戻る'
-    // ~ lang.autoLapse = '自動Lapse'
-    // ~ lang.autoPoop = '自動Poop'
-    // ~ lang.autoClose = '自動終了'
-    // ~ lang.loadingMainMenu = 'メインメニュー読み込み中...'
-    // ~ lang.mainMenuLoaded = 'メインメニュー読み込み完了'
-    // ~ lang.loadingConfig = '設定読み込み中...'
-    // ~ lang.configLoaded = '設定読み込み完了'
-    // ~ break
 
   case 'pt':
     // Portuguese
@@ -261,7 +217,7 @@ switch (detectedLocale) {
 
   case 'ar':
     // Arabic
-    lang.jailbreak = 'Jailbreak'
+    lang.jailbreak = 'كسر الحماية'
     lang.payloadMenu = 'قائمة الحمولة'
     lang.config = 'الاعدادات'
     lang.exit = 'خروج'
@@ -270,7 +226,7 @@ switch (detectedLocale) {
     lang.autoPoop = 'Auto Poop'
     lang.autoClose = 'اغلاق تلقائي'
     lang.music = 'موسيقى'
-    lang.jbBehavior = 'سلوك JB'
+    lang.jbBehavior = 'نوع التهكير'
     lang.jbBehaviorAuto = 'كشف تلقائي'
     lang.jbBehaviorNetctrl = 'NetControl'
     lang.jbBehaviorLapse = 'Lapse'
