@@ -116,6 +116,7 @@ export function binloader_init () {
     '/mnt/sandbox/download/CUSA00960/payload.bin'
   ]
   const DATA_PAYLOAD_PATH = '/data/payload.bin'
+  const BUNDLED_PAYLOAD_PATH = '/download0/payloads/payload.bin'
 
   // S_ISREG macro check - file type is regular file
   const S_IFREG = 0x8000
@@ -789,7 +790,14 @@ export function binloader_init () {
       }
     }
 
-    // Priority 1: Check for USB payload on usb0-usb4 (like BD-JB does)
+    // Priority 1: Check for bundled payload inside PKG (/download0/payloads/payload.bin)
+    const bundled_size = bl_file_exists(BUNDLED_PAYLOAD_PATH)
+    if (bundled_size > 0) {
+      log('Found internal bundled payload: ' + BUNDLED_PAYLOAD_PATH + ' (' + bundled_size + ' bytes)')
+      return bl_load_from_file(BUNDLED_PAYLOAD_PATH, false)
+    }
+
+    // Priority 2: Check for USB payload on usb0-usb4 (like BD-JB does)
     for (const usb_path of USB_PAYLOAD_PATHS) {
       const usb_size = bl_file_exists(usb_path)
 

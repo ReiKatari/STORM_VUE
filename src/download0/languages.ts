@@ -9,14 +9,21 @@ export const lang: Record<string, string> = {
   autoLapse: 'Auto Lapse',
   autoPoop: 'Auto Poop',
   autoClose: 'Auto Close',
-  music: 'Music',
   jbBehavior: 'JB Behavior',
   jbBehaviorAuto: 'Auto Detect',
   jbBehaviorNetctrl: 'NetControl',
   jbBehaviorLapse: 'Lapse',
   theme: 'Theme',
-  xToGoBack: 'X to go back',
-  oToGoBack: 'O to go back'
+  xToGoBack: 'Press X to return',
+  oToGoBack: 'Press O to return',
+  subtitleMain: 'STORM CHANNEL • PS4 USERLAND & KERNEL EXPLOIT ENGINE (FW 7.00 - 13.00)',
+  payloadSubtitle: 'SELECT PAYLOAD TO EXECUTE (.BIN / .ELF / .JS)',
+  configTitle: 'SYSTEM CONFIGURATION',
+  payloadTitle: 'PAYLOAD HOST & INJECTOR',
+  netReceiver: 'Network Payload Receiver (Port 9020 / Web)',
+  netReceiverSub: 'Send .bin / .elf payloads over WiFi/LAN from PC or Phone',
+  listeningStatus: 'SERVER ACTIVE • WAITING FOR PAYLOAD ON PORT 9020...',
+  netInstructions: 'Send payload via Netcat: nc <PS4_IP> 9020 < payload.bin'
 }
 
 export let useImageText = false
@@ -24,7 +31,7 @@ export let textImageBase = ''
 
 let detectedLocale = jsmaf.locale
 if (!detectedLocale) {
-  detectedLocale = 'ar'
+  detectedLocale = 'ru'
 }
 
 log('Detected locale: ' + detectedLocale)
@@ -36,6 +43,36 @@ if (IMAGE_TEXT_LOCALES.includes(detectedLocale)) {
 }
 
 switch (detectedLocale) {
+  case 'ru':
+  case 'ru-RU':
+  case 'ru-BY':
+  case 'ru-KZ':
+  case 'ru-UA':
+    // Russian
+    lang.jailbreak = 'Взлом (Jailbreak)'
+    lang.payloadMenu = 'Меню пейлоадов'
+    lang.config = 'Настройки'
+    lang.exit = 'Выход'
+    lang.autoLapse = 'Авто Lapse'
+    lang.autoPoop = 'Авто Poop'
+    lang.autoClose = 'Авто закрытие'
+    lang.jbBehavior = 'Режим взлома'
+    lang.jbBehaviorAuto = 'Авто определение'
+    lang.jbBehaviorNetctrl = 'NetControl'
+    lang.jbBehaviorLapse = 'Lapse'
+    lang.theme = 'Тема оформления'
+    lang.xToGoBack = 'Нажмите X для возврата'
+    lang.oToGoBack = 'Нажмите O для возврата'
+    lang.subtitleMain = 'STORM CHANNEL • ДВИЖОК ВЗЛОМА PS4 (ПО 7.00 - 13.00)'
+    lang.payloadSubtitle = 'ВЫБЕРИТЕ ПЕЙЛОАД ИЛИ ВКЛЮЧИТЕ СЕТЕВОЙ ПРИЕМНИК'
+    lang.configTitle = 'НАСТРОЙКИ СИСТЕМЫ'
+    lang.payloadTitle = 'МЕНЕДЖЕР ПЕЙЛОАДОВ'
+    lang.netReceiver = '📡 Сетевой приёмник (Порт 9020 / Web)'
+    lang.netReceiverSub = 'Дистанционная отправка пейлоадов с ПК или смартфона'
+    lang.listeningStatus = 'СЕРВЕР АКТИВЕН • ОЖИДАНИЕ ПЕЙЛОАДА НА ПОРТУ 9020...'
+    lang.netInstructions = 'Отправка через Netcat / веб: nc <IP_PS4> 9020 < payload.bin'
+    break
+
   case 'es':
   case 'es-ES':
   case 'es-CL':
@@ -50,7 +87,6 @@ switch (detectedLocale) {
     lang.autoLapse = 'Auto Lapse'
     lang.autoPoop = 'Auto Poop'
     lang.autoClose = 'Auto Cerrar'
-    lang.music = 'Musica'
     lang.jbBehavior = 'Comportamiento JB'
     lang.jbBehaviorAuto = 'Auto Detectar'
     lang.jbBehaviorNetctrl = 'NetControl'
@@ -58,6 +94,14 @@ switch (detectedLocale) {
     lang.theme = 'Tema'
     lang.xToGoBack = 'X para volver'
     lang.oToGoBack = 'O para volver'
+    lang.subtitleMain = 'STORM CHANNEL • MOTOR DE EXPLOIT PS4 (FW 7.00 - 13.00)'
+    lang.payloadSubtitle = 'SELECCIONE EL PAYLOAD O ACTIVE EL RECEPTOR DE RED'
+    lang.configTitle = 'CONFIGURACIÓN DEL SISTEMA'
+    lang.payloadTitle = 'GESTOR DE PAYLOADS'
+    lang.netReceiver = '📡 Receptor de Red (Puerto 9020 / Web)'
+    lang.netReceiverSub = 'Enviar payloads desde PC o celular por red'
+    lang.listeningStatus = 'SERVIDOR ACTIVO • ESPERANDO PAYLOAD EN PUERTO 9020...'
+    lang.netInstructions = 'Enviar con Netcat: nc <IP_PS4> 9020 < payload.bin'
     break
 
   case 'pt':
@@ -69,7 +113,6 @@ switch (detectedLocale) {
     lang.autoLapse = 'Auto Lapse'
     lang.autoPoop = 'Auto Poop'
     lang.autoClose = 'Fechar Auto'
-    lang.music = 'Musica'
     lang.jbBehavior = 'Comportamento JB'
     lang.jbBehaviorAuto = 'Auto Detectar'
     lang.jbBehaviorNetctrl = 'NetControl'
@@ -88,7 +131,6 @@ switch (detectedLocale) {
     lang.autoLapse = 'Auto Lapse'
     lang.autoPoop = 'Auto Poop'
     lang.autoClose = 'Fermer Auto'
-    lang.music = 'Musique'
     lang.jbBehavior = 'Comportement JB'
     lang.jbBehaviorAuto = 'Auto Detecter'
     lang.jbBehaviorNetctrl = 'NetControl'
@@ -107,7 +149,6 @@ switch (detectedLocale) {
     lang.autoLapse = 'Auto Lapse'
     lang.autoPoop = 'Auto Poop'
     lang.autoClose = 'Auto schließen'
-    lang.music = 'Musik'
     lang.jbBehavior = 'JB-Verhalten'
     lang.jbBehaviorAuto = 'Automatisch'
     lang.jbBehaviorNetctrl = 'NetControl'
@@ -117,161 +158,8 @@ switch (detectedLocale) {
     lang.oToGoBack = 'O zum Zurückgehen'
     break
 
-  case 'it':
-    // Italian
-    lang.jailbreak = 'Jailbreak'
-    lang.payloadMenu = 'Menu Payload'
-    lang.config = 'Configurazione'
-    lang.exit = 'Esci'
-    lang.autoLapse = 'Auto Lapse'
-    lang.autoPoop = 'Auto Poop'
-    lang.autoClose = 'Chiudi Auto'
-    lang.music = 'Musica'
-    lang.jbBehavior = 'Comportamento JB'
-    lang.jbBehaviorAuto = 'Auto Rileva'
-    lang.jbBehaviorNetctrl = 'NetControl'
-    lang.jbBehaviorLapse = 'Lapse'
-    lang.theme = 'Tema'
-    lang.xToGoBack = 'X per tornare indietro'
-    lang.oToGoBack = 'O per tornare indietro'
-    break
-
-  case 'nl':
-    // Dutch
-    lang.jailbreak = 'Jailbreak'
-    lang.payloadMenu = 'Payload Menu'
-    lang.config = 'Instellingen'
-    lang.exit = 'Afsluiten'
-    lang.autoLapse = 'Auto Lapse'
-    lang.autoPoop = 'Auto Poop'
-    lang.autoClose = 'Auto Sluiten'
-    lang.music = 'Muziek'
-    lang.jbBehavior = 'JB Gedrag'
-    lang.jbBehaviorAuto = 'Auto Detectie'
-    lang.jbBehaviorNetctrl = 'NetControl'
-    lang.jbBehaviorLapse = 'Lapse'
-    lang.theme = 'Thema'
-    lang.xToGoBack = 'X om terug te gaan'
-    lang.oToGoBack = 'O om terug te gaan'
-    break
-
-  case 'pl':
-    // Polish
-    lang.jailbreak = 'Jailbreak'
-    lang.payloadMenu = 'Menu Payload'
-    lang.config = 'Konfiguracja'
-    lang.exit = 'Wyjscie'
-    lang.autoLapse = 'Auto Lapse'
-    lang.autoPoop = 'Auto Poop'
-    lang.autoClose = 'Auto Zamknij'
-    lang.music = 'Muzyka'
-    lang.jbBehavior = 'Zachowanie JB'
-    lang.jbBehaviorAuto = 'Auto Wykryj'
-    lang.jbBehaviorNetctrl = 'NetControl'
-    lang.jbBehaviorLapse = 'Lapse'
-    lang.theme = 'Motyw'
-    lang.xToGoBack = 'X aby wrocic'
-    lang.oToGoBack = 'O aby wrocic'
-    break
-
-  case 'tr':
-    // Turkish
-    lang.jailbreak = 'Jailbreak'
-    lang.payloadMenu = 'Payload Menusu'
-    lang.config = 'Ayarlar'
-    lang.exit = 'Cikis'
-    lang.autoLapse = 'Auto Lapse'
-    lang.autoPoop = 'Auto Poop'
-    lang.autoClose = 'Otomatik Kapat'
-    lang.music = 'Muzik'
-    lang.jbBehavior = 'JB Davranisi'
-    lang.jbBehaviorAuto = 'Otomatik Algilama'
-    lang.jbBehaviorNetctrl = 'NetControl'
-    lang.jbBehaviorLapse = 'Lapse'
-    lang.theme = 'Tema'
-    lang.xToGoBack = 'Geri gitmek icin X'
-    lang.oToGoBack = 'Geri gitmek icin O'
-    break
-
-  case 'ar':
-    // Arabic
-    lang.jailbreak = 'كسر الحماية'
-    lang.payloadMenu = 'قائمة الحمولة'
-    lang.config = 'الاعدادات'
-    lang.exit = 'خروج'
-    lang.autoLapse = 'Auto Lapse'
-    lang.autoPoop = 'Auto Poop'
-    lang.autoClose = 'اغلاق تلقائي'
-    lang.music = 'موسيقى'
-    lang.jbBehavior = 'نوع التهكير'
-    lang.jbBehaviorAuto = 'كشف تلقائي'
-    lang.jbBehaviorNetctrl = 'NetControl'
-    lang.jbBehaviorLapse = 'Lapse'
-    lang.theme = 'سمة'
-    lang.xToGoBack = 'X للرجوع'
-    lang.oToGoBack = 'O للرجوع'
-    break
-
-  case 'ja':
-    // Japanese
-    lang.jailbreak = '脱獄'
-    lang.payloadMenu = 'ペイロードメニュー'
-    lang.config = '設定'
-    lang.exit = '終了'
-    lang.autoLapse = '自動Lapse'
-    lang.autoPoop = '自動Poop'
-    lang.autoClose = '自動終了'
-    lang.music = '音楽'
-    lang.jbBehavior = 'JB動作'
-    lang.jbBehaviorAuto = '自動検出'
-    lang.jbBehaviorNetctrl = 'NetControl'
-    lang.jbBehaviorLapse = 'Lapse'
-    lang.theme = 'テーマ'
-    lang.xToGoBack = 'Xで戻る'
-    lang.oToGoBack = 'Oで戻る'
-    break
-
-  case 'ko':
-    // Korean
-    lang.jailbreak = '탈옥'
-    lang.payloadMenu = '페이로드 메뉴'
-    lang.config = '설정'
-    lang.exit = '종료'
-    lang.autoLapse = '자동 Lapse'
-    lang.autoPoop = '자동 Poop'
-    lang.autoClose = '자동 닫기'
-    lang.music = '음악'
-    lang.jbBehavior = 'JB 동작'
-    lang.jbBehaviorAuto = '자동 감지'
-    lang.jbBehaviorNetctrl = 'NetControl'
-    lang.jbBehaviorLapse = 'Lapse'
-    lang.theme = '테마'
-    lang.xToGoBack = 'X로 뒤로 가기'
-    lang.oToGoBack = 'O로 뒤로 가기'
-    break
-
-  case 'zh':
-    // Chinese
-    lang.jailbreak = '越狱'
-    lang.payloadMenu = '载荷菜单'
-    lang.config = '设置'
-    lang.exit = '退出'
-    lang.autoLapse = '自动Lapse'
-    lang.autoPoop = '自动Poop'
-    lang.autoClose = '自动关闭'
-    lang.music = '音乐'
-    lang.jbBehavior = 'JB行为'
-    lang.jbBehaviorAuto = '自动检测'
-    lang.jbBehaviorNetctrl = 'NetControl'
-    lang.jbBehaviorLapse = 'Lapse'
-    lang.theme = '主题'
-    lang.xToGoBack = '按 X 返回'
-    lang.oToGoBack = '按 O 返回'
-    break
-
   case 'en':
   default:
-    // English (default) which is already set
     break
 }
 

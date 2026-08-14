@@ -11,7 +11,7 @@ if (typeof lang === 'undefined') {
 }
 
 (function () {
-  log('Loading config UI...')
+  log('Loading modern config UI...')
 
   const fs = {
     write: function (filename: string, content: string, callback: (error: Error | null) => void) {
@@ -42,7 +42,6 @@ if (typeof lang === 'undefined') {
     autopoop: boolean
     autoclose: boolean
     autoclose_delay: number
-    music: boolean
     jb_behavior: number
     theme: string
   } = {
@@ -50,16 +49,14 @@ if (typeof lang === 'undefined') {
     autopoop: false,
     autoclose: false,
     autoclose_delay: 0,
-    music: true,
     jb_behavior: 0,
     theme: 'default'
   }
 
-  // Store user's payloads so we don't overwrite them
   let userPayloads: string[] = []
   let configLoaded = false
 
-  const jbBehaviorLabels = [lang.jbBehaviorAuto, lang.jbBehaviorNetctrl, lang.jbBehaviorLapse]
+  const jbBehaviorLabels = [lang.jbBehaviorAuto || 'Auto Detect', lang.jbBehaviorNetctrl || 'NetControl', lang.jbBehaviorLapse || 'Lapse']
   const jbBehaviorImgKeys = ['jbBehaviorAuto', 'jbBehaviorNetctrl', 'jbBehaviorLapse']
 
   function scanThemes (): string[] {
@@ -117,23 +114,24 @@ if (typeof lang === 'undefined') {
   const availableThemes = scanThemes()
   log('Discovered themes: ' + availableThemes.join(', '))
   const themeLabels: string[] = availableThemes.map((theme: string) => theme.charAt(0).toUpperCase() + theme.slice(1))
-  const themeImgKeys: string[] = availableThemes.map((theme: string) => 'theme' + theme.charAt(0).toUpperCase() + theme.slice(1))
 
   let currentButton = 0
   const buttons: Image[] = []
-  const buttonTexts: jsmaf.Text[] = []
+  const buttonTexts: (Image | jsmaf.Text)[] = []
   const buttonMarkers: (Image | null)[] = []
   const buttonOrigPos: { x: number; y: number }[] = []
   const textOrigPos: { x: number; y: number }[] = []
-  const valueTexts: Image[] = []
+  const valueTexts: (Image | jsmaf.Text)[] = []
 
   const normalButtonImg = 'file:///assets/img/button_over_9.png'
   const selectedButtonImg = 'file:///assets/img/button_over_9.png'
 
   jsmaf.root.children.length = 0
 
-  new Style({ name: 'white', color: 'white', size: 24 })
-  new Style({ name: 'title', color: 'white', size: 32 })
+  new Style({ name: 'white', color: '#FFFFFF', size: 24 })
+  new Style({ name: 'title', color: '#00F0FF', size: 36 })
+  new Style({ name: 'subtitle', color: '#94A3B8', size: 20 })
+  new Style({ name: 'value', color: '#38BDF8', size: 24 })
 
   const background = new Image({
     url: 'file:///../download0/img/multiview_bg_VAF.png',
@@ -146,49 +144,37 @@ if (typeof lang === 'undefined') {
 
   const logo = new Image({
     url: 'file:///../download0/img/logo.png',
-    x: 1620,
-    y: 0,
-    width: 300,
-    height: 169
+    x: 1680,
+    y: 40,
+    width: 150,
+    height: 150
   })
   jsmaf.root.children.push(logo)
 
-  if (useImageText) {
-    const title = new Image({
-      url: textImageBase + 'config.png',
-      x: 860,
-      y: 100,
-      width: 200,
-      height: 60
-    })
-    jsmaf.root.children.push(title)
-  } else {
-    const title = new jsmaf.Text()
-    title.text = lang.config
-    title.x = 910
-    title.y = 120
-    title.style = 'title'
-    jsmaf.root.children.push(title)
-  }
+  const titleText = new jsmaf.Text()
+  titleText.text = 'STORM VUE • ' + (lang.configTitle || 'НАСТРОЙКИ СИСТЕМЫ')
+  titleText.x = 160
+  titleText.y = 80
+  titleText.style = 'title'
+  jsmaf.root.children.push(titleText)
 
   const configOptions = [
-    { key: 'autolapse', label: lang.autoLapse, imgKey: 'autoLapse', type: 'toggle' },
-    { key: 'autopoop', label: lang.autoPoop, imgKey: 'autoPoop', type: 'toggle' },
-    { key: 'autoclose', label: lang.autoClose, imgKey: 'autoClose', type: 'toggle' },
-    { key: 'music', label: lang.music, imgKey: 'music', type: 'toggle' },
-    { key: 'jb_behavior', label: lang.jbBehavior, imgKey: 'jbBehavior', type: 'cycle' },
+    { key: 'autolapse', label: lang.autoLapse || 'Auto Lapse', imgKey: 'autoLapse', type: 'toggle' },
+    { key: 'autopoop', label: lang.autoPoop || 'Auto Poop', imgKey: 'autoPoop', type: 'toggle' },
+    { key: 'autoclose', label: lang.autoClose || 'Auto Close', imgKey: 'autoClose', type: 'toggle' },
+    { key: 'jb_behavior', label: lang.jbBehavior || 'JB Behavior', imgKey: 'jbBehavior', type: 'cycle' },
     { key: 'theme', label: lang.theme || 'Theme', imgKey: 'theme', type: 'cycle' }
   ]
 
-  const centerX = 960
-  const startY = 200
-  const buttonSpacing = 120
-  const buttonWidth = 400
-  const buttonHeight = 80
+  const startX = 160
+  const startY = 180
+  const buttonSpacing = 110
+  const buttonWidth = 800
+  const buttonHeight = 85
 
   for (let i = 0; i < configOptions.length; i++) {
     const configOption = configOptions[i]!
-    const btnX = centerX - buttonWidth / 2
+    const btnX = startX
     const btnY = startY + i * buttonSpacing
 
     const button = new Image({
@@ -198,25 +184,26 @@ if (typeof lang === 'undefined') {
       width: buttonWidth,
       height: buttonHeight
     })
+    button.alpha = 0.8
     buttons.push(button)
     jsmaf.root.children.push(button)
 
     buttonMarkers.push(null)
 
     let btnText: Image | jsmaf.Text
-    if (useImageText) {
+    if (useImageText && configOption.imgKey !== 'theme') {
       btnText = new Image({
         url: textImageBase + configOption.imgKey + '.png',
-        x: btnX + 20,
-        y: btnY + 15,
-        width: 200,
+        x: btnX + 30,
+        y: btnY + 18,
+        width: 250,
         height: 50
       })
     } else {
       btnText = new jsmaf.Text()
       btnText.text = configOption.label
-      btnText.x = btnX + 30
-      btnText.y = btnY + 28
+      btnText.x = btnX + 40
+      btnText.y = btnY + buttonHeight / 2 - 14
       btnText.style = 'white'
     }
     buttonTexts.push(btnText)
@@ -225,8 +212,8 @@ if (typeof lang === 'undefined') {
     if (configOption.type === 'toggle') {
       const checkmark = new Image({
         url: currentConfig[configOption.key as keyof typeof currentConfig] ? 'file:///assets/img/check_small_on.png' : 'file:///assets/img/check_small_off.png',
-        x: btnX + 320,
-        y: btnY + 20,
+        x: btnX + buttonWidth - 80,
+        y: btnY + 22,
         width: 40,
         height: 40
       })
@@ -235,30 +222,17 @@ if (typeof lang === 'undefined') {
     } else {
       let valueLabel: Image | jsmaf.Text
       if (configOption.key === 'jb_behavior') {
-        if (useImageText) {
-          valueLabel = new Image({
-            url: textImageBase + jbBehaviorImgKeys[currentConfig.jb_behavior] + '.png',
-            x: btnX + 230,
-            y: btnY + 15,
-            width: 150,
-            height: 50
-          })
-        } else {
-          valueLabel = new jsmaf.Text()
-          valueLabel.text = jbBehaviorLabels[currentConfig.jb_behavior] || jbBehaviorLabels[0]!
-          valueLabel.x = btnX + 250
-          valueLabel.y = btnY + 28
-          valueLabel.style = 'white'
-        }
-      } else if (configOption.key === 'theme') {
-        const themeIndex = availableThemes.indexOf(currentConfig.theme)
-        const displayIndex = themeIndex >= 0 ? themeIndex : 0
-
         valueLabel = new jsmaf.Text()
-        valueLabel.text = themeLabels[displayIndex] || themeLabels[0]!
-        valueLabel.x = btnX + 250
-        valueLabel.y = btnY + 28
-        valueLabel.style = 'white'
+        valueLabel.text = jbBehaviorLabels[currentConfig.jb_behavior] || jbBehaviorLabels[0]!
+        valueLabel.x = btnX + buttonWidth - 260
+        valueLabel.y = btnY + buttonHeight / 2 - 14
+        valueLabel.style = 'value'
+      } else {
+        valueLabel = new jsmaf.Text()
+        valueLabel.text = themeLabels[availableThemes.indexOf(currentConfig.theme)] || currentConfig.theme
+        valueLabel.x = btnX + buttonWidth - 260
+        valueLabel.y = btnY + buttonHeight / 2 - 14
+        valueLabel.style = 'value'
       }
       valueTexts.push(valueLabel)
       jsmaf.root.children.push(valueLabel)
@@ -268,23 +242,13 @@ if (typeof lang === 'undefined') {
     textOrigPos.push({ x: btnText.x, y: btnText.y })
   }
 
-  let backHint: Image | jsmaf.Text
-  if (useImageText) {
-    backHint = new Image({
-      url: textImageBase + (jsmaf.circleIsAdvanceButton ? 'xToGoBack.png' : 'oToGoBack.png'),
-      x: centerX - 60,
-      y: startY + configOptions.length * buttonSpacing + 120,
-      width: 150,
-      height: 40
-    })
-  } else {
-    backHint = new jsmaf.Text()
-    backHint.text = jsmaf.circleIsAdvanceButton ? lang.xToGoBack : lang.oToGoBack
-    backHint.x = centerX - 60
-    backHint.y = startY + configOptions.length * buttonSpacing + 120
-    backHint.style = 'white'
-  }
-  jsmaf.root.children.push(backHint)
+  // Footer Navigation Bar
+  const backHelpText = new jsmaf.Text()
+  backHelpText.text = (lang.xToGoBack || 'X/O to Save & Back')
+  backHelpText.x = startX
+  backHelpText.y = 800
+  backHelpText.style = 'subtitle'
+  jsmaf.root.children.push(backHelpText)
 
   let zoomInInterval: number | null = null
   let zoomOutInterval: number | null = null
@@ -294,13 +258,13 @@ if (typeof lang === 'undefined') {
     return (1 - Math.cos(t * Math.PI)) / 2
   }
 
-  function animateZoomIn (btn: Image, text: jsmaf.Text, btnOrigX: number, btnOrigY: number, textOrigX: number, textOrigY: number) {
+  function animateZoomIn (btn: Image, text: jsmaf.Text | Image, btnOrigX: number, btnOrigY: number, textOrigX: number, textOrigY: number) {
     if (zoomInInterval) jsmaf.clearInterval(zoomInInterval)
     const btnW = buttonWidth
     const btnH = buttonHeight
     const startScale = btn.scaleX || 1.0
-    const endScale = 1.1
-    const duration = 175
+    const endScale = 1.05
+    const duration = 150
     let elapsed = 0
     const step = 16
 
@@ -319,20 +283,20 @@ if (typeof lang === 'undefined') {
       text.x = textOrigX - (btnW * (scale - 1)) / 2
       text.y = textOrigY - (btnH * (scale - 1)) / 2
 
-      if (t >= 1) {
-        jsmaf.clearInterval(zoomInInterval ?? -1)
+      if (t >= 1 && zoomInInterval) {
+        jsmaf.clearInterval(zoomInInterval)
         zoomInInterval = null
       }
     }, step)
   }
 
-  function animateZoomOut (btn: Image, text: jsmaf.Text, btnOrigX: number, btnOrigY: number, textOrigX: number, textOrigY: number) {
+  function animateZoomOut (btn: Image, text: jsmaf.Text | Image, btnOrigX: number, btnOrigY: number, textOrigX: number, textOrigY: number) {
     if (zoomOutInterval) jsmaf.clearInterval(zoomOutInterval)
     const btnW = buttonWidth
     const btnH = buttonHeight
-    const startScale = btn.scaleX || 1.1
+    const startScale = btn.scaleX || 1.05
     const endScale = 1.0
-    const duration = 175
+    const duration = 150
     let elapsed = 0
     const step = 16
 
@@ -351,44 +315,39 @@ if (typeof lang === 'undefined') {
       text.x = textOrigX - (btnW * (scale - 1)) / 2
       text.y = textOrigY - (btnH * (scale - 1)) / 2
 
-      if (t >= 1) {
-        jsmaf.clearInterval(zoomOutInterval ?? -1)
+      if (t >= 1 && zoomOutInterval) {
+        jsmaf.clearInterval(zoomOutInterval)
         zoomOutInterval = null
       }
     }, step)
   }
 
   function updateHighlight () {
-    // Animate out the previous button
     const prevButtonObj = buttons[prevButton]
-    const buttonMarker = buttonMarkers[prevButton]
     if (prevButton >= 0 && prevButton !== currentButton && prevButtonObj) {
       prevButtonObj.url = normalButtonImg
-      prevButtonObj.alpha = 0.7
+      prevButtonObj.alpha = 0.75
       prevButtonObj.borderColor = 'transparent'
       prevButtonObj.borderWidth = 0
-      if (buttonMarker) buttonMarker.visible = false
       animateZoomOut(prevButtonObj, buttonTexts[prevButton]!, buttonOrigPos[prevButton]!.x, buttonOrigPos[prevButton]!.y, textOrigPos[prevButton]!.x, textOrigPos[prevButton]!.y)
     }
 
-    // Set styles for all buttons
     for (let i = 0; i < buttons.length; i++) {
       const button = buttons[i]
-      const buttonMarker = buttonMarkers[i]
       const buttonText = buttonTexts[i]
       const buttonOrigPos_ = buttonOrigPos[i]
       const textOrigPos_ = textOrigPos[i]
-      if (button === undefined || buttonText === undefined || buttonOrigPos_ === undefined || textOrigPos_ === undefined) continue
+      if (!button || !buttonText || !buttonOrigPos_ || !textOrigPos_) continue
+
       if (i === currentButton) {
         button.url = selectedButtonImg
         button.alpha = 1.0
-        button.borderColor = 'rgb(100,180,255)'
+        button.borderColor = 'rgb(0, 240, 255)'
         button.borderWidth = 3
-        if (buttonMarker) buttonMarker.visible = true
         animateZoomIn(button, buttonText, buttonOrigPos_.x, buttonOrigPos_.y, textOrigPos_.x, textOrigPos_.y)
       } else if (i !== prevButton) {
         button.url = normalButtonImg
-        button.alpha = 0.7
+        button.alpha = 0.75
         button.borderColor = 'transparent'
         button.borderWidth = 0
         button.scaleX = 1.0
@@ -399,7 +358,6 @@ if (typeof lang === 'undefined') {
         buttonText.scaleY = 1.0
         buttonText.x = textOrigPos_.x
         buttonText.y = textOrigPos_.y
-        if (buttonMarker) buttonMarker.visible = false
       }
     }
 
@@ -407,41 +365,31 @@ if (typeof lang === 'undefined') {
   }
 
   function updateValueText (index: number) {
-    const options = configOptions[index]
-    const valueText = valueTexts[index]
-    if (!options || !valueText) return
-    const key = options.key
-    if (options.type === 'toggle') {
-      const value = currentConfig[key as keyof typeof currentConfig]
-      valueText.url = value ? 'file:///assets/img/check_small_on.png' : 'file:///assets/img/check_small_off.png'
-    } else {
-      if (key === 'jb_behavior') {
-        if (useImageText) {
-          (valueText as Image).url = textImageBase + jbBehaviorImgKeys[currentConfig.jb_behavior] + '.png'
-        } else {
-          (valueText as jsmaf.Text).text = jbBehaviorLabels[currentConfig.jb_behavior] || jbBehaviorLabels[0]
-        }
-      } else if (key === 'theme') {
-        const themeIndex = availableThemes.indexOf(currentConfig.theme)
-        const displayIndex = themeIndex >= 0 ? themeIndex : 0;
+    const option = configOptions[index]!
+    const valueText = valueTexts[index]!
 
-        (valueText as jsmaf.Text).text = themeLabels[displayIndex] || themeLabels[0]!
+    if (option.type === 'toggle') {
+      const checkmark = valueText as Image
+      checkmark.url = currentConfig[option.key as keyof typeof currentConfig] ? 'file:///assets/img/check_small_on.png' : 'file:///assets/img/check_small_off.png'
+    } else {
+      const textObj = valueText as jsmaf.Text
+      if (option.key === 'jb_behavior') {
+        textObj.text = jbBehaviorLabels[currentConfig.jb_behavior] || jbBehaviorLabels[0]!
+      } else if (option.key === 'theme') {
+        textObj.text = themeLabels[availableThemes.indexOf(currentConfig.theme)] || currentConfig.theme
       }
     }
   }
 
   function saveConfig () {
-    if (!configLoaded) {
-      log('Config not loaded yet, skipping save')
-      return
-    }
+    if (!configLoaded) return
+
     const configData = {
       config: {
         autolapse: currentConfig.autolapse,
         autopoop: currentConfig.autopoop,
         autoclose: currentConfig.autoclose,
         autoclose_delay: currentConfig.autoclose_delay,
-        music: currentConfig.music,
         jb_behavior: currentConfig.jb_behavior,
         theme: currentConfig.theme
       },
@@ -476,18 +424,14 @@ if (typeof lang === 'undefined') {
           currentConfig.autopoop = CONFIG.autopoop || false
           currentConfig.autoclose = CONFIG.autoclose || false
           currentConfig.autoclose_delay = CONFIG.autoclose_delay || 0
-          currentConfig.music = CONFIG.music !== false
           currentConfig.jb_behavior = CONFIG.jb_behavior || 0
 
-          // Validate and set theme (themes are auto-discovered from directory scan)
           if (CONFIG.theme && availableThemes.includes(CONFIG.theme)) {
             currentConfig.theme = CONFIG.theme
           } else {
-            log('WARNING: Theme "' + (CONFIG.theme || 'undefined') + '" not found in available themes, using default')
             currentConfig.theme = availableThemes[0] || 'default'
           }
 
-          // Preserve user's payloads
           if (configData.payloads && Array.isArray(configData.payloads)) {
             userPayloads = configData.payloads.slice()
           }
@@ -495,17 +439,12 @@ if (typeof lang === 'undefined') {
           for (let i = 0; i < configOptions.length; i++) {
             updateValueText(i)
           }
-          if (currentConfig.music) {
-            startBgmIfEnabled()
-          } else {
-            stopBgm()
-          }
           configLoaded = true
           log('Config loaded successfully')
         }
       } catch (e) {
         log('ERROR: Failed to parse config: ' + (e as Error).message)
-        configLoaded = true // Allow saving even on error
+        configLoaded = true
       }
     })
   }
@@ -527,19 +466,8 @@ if (typeof lang === 'undefined') {
           log(key + ' = ' + currentConfig.theme)
         }
       } else {
-        const boolKey = key as 'autolapse' | 'autopoop' | 'autoclose' | 'music'
+        const boolKey = key as 'autolapse' | 'autopoop' | 'autoclose'
         currentConfig[boolKey] = !currentConfig[boolKey]
-
-        if (boolKey === 'music') {
-          if (typeof CONFIG !== 'undefined') {
-            CONFIG.music = currentConfig.music
-          }
-          if (currentConfig.music) {
-            startBgmIfEnabled()
-          } else {
-            stopBgm()
-          }
-        }
 
         if (key === 'autolapse' && currentConfig.autolapse === true) {
           currentConfig.autopoop = false
@@ -549,7 +477,6 @@ if (typeof lang === 'undefined') {
               break
             }
           }
-          log('autopoop disabled (autolapse enabled)')
         } else if (key === 'autopoop' && currentConfig.autopoop === true) {
           currentConfig.autolapse = false
           for (let i = 0; i < configOptions.length; i++) {
@@ -558,9 +485,7 @@ if (typeof lang === 'undefined') {
               break
             }
           }
-          log('autolapse disabled (autopoop enabled)')
         }
-
         log(key + ' = ' + currentConfig[boolKey])
       }
 
@@ -582,8 +507,7 @@ if (typeof lang === 'undefined') {
     } else if (keyCode === confirmKey) {
       handleButtonPress()
     } else if (keyCode === backKey) {
-      log('Restarting...')
-      // Save config before restart
+      log('Saving and exiting settings...')
       saveConfig()
       jsmaf.setTimeout(function () {
         debugging.restart()
@@ -593,6 +517,5 @@ if (typeof lang === 'undefined') {
 
   updateHighlight()
   loadConfig()
-
-  log('Config UI loaded.')
+  log('Modern Config UI loaded.')
 })()

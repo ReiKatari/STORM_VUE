@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<ps4_project version="1.0">
+  <volume>
+    <volume_type>pkg_ps4_patch</volume_type>
+    <volume_id>PS4VOLUME</volume_id>
+    <volume_ts>2026-08-11 16:00:00</volume_ts>
+    <package_version>01.24</package_version>
+    <package_sub_version>00</package_sub_version>
+    <content_id>HP9000-CUSA00960_00-PSVUE00000000000</content_id>
+  </volume>
+  <files img_type="param">
+    <file target_path="icon0.png" orig_path="src/download0/img/logo.png" />
+    <file target_path="download0/loader.js" orig_path="dist/download0/loader.js" />
+    <file target_path="download0/binloader.js" orig_path="dist/download0/binloader.js" />
+    <file target_path="download0/lapse.js" orig_path="dist/download0/lapse.js" />
+    <file target_path="download0/netctrl_c0w_twins.js" orig_path="dist/download0/netctrl_c0w_twins.js" />
+    <file target_path="download0/userland.js" orig_path="dist/download0/userland.js" />
+    <file target_path="download0/config.json" orig_path="dist/download0/config.json" />
+    <file target_path="download0/languages.js" orig_path="dist/download0/languages.js" />
+    <file target_path="download0/payloads/payload.bin" orig_path="dist/download0/payloads/payload.bin" />
+    <file target_path="download0/payloads/GoldHEN.bin" orig_path="dist/download0/payloads/GoldHEN.bin" />
+    <file target_path="download0/themes/default/main.js" orig_path="dist/download0/themes/default/main.js" />
+    <file target_path="download0/themes/default/config_ui.js" orig_path="dist/download0/themes/default/config_ui.js" />
+    <file target_path="download0/themes/default/payload_host.js" orig_path="dist/download0/themes/default/payload_host.js" />
+  </files>
+</ps4_project>

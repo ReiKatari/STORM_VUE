@@ -195,6 +195,13 @@ fn.register(0x4, 'write', ['bigint', 'bigint', 'number'], 'bigint')
 fn.register(0x5, 'open', ['bigint', 'number', 'number'], 'bigint')
 fn.register(0x6, 'close', ['bigint'], 'bigint')
 
-// utils.notify('UwU')
+// Cleanup large temporary heap allocations to reclaim RAM
+try {
+  spray.length = 0
+  u32_structs.length = 0
+  log('Heap spray memory reclaimed successfully')
+} catch (e) {
+  // ignore
+}
 
 export { jsc_addr, libc_addr, libkernel_addr, eboot_addr }

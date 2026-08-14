@@ -33,9 +33,7 @@ export function show_success (immediate?: boolean) {
   }
 }
 
-if (typeof startBgmIfEnabled === 'function') {
-  startBgmIfEnabled()
-}
+
 
 const is_jailbroken = checkJailbroken()
 const themeFolder = (typeof CONFIG !== 'undefined' && typeof CONFIG.theme === 'string') ? CONFIG.theme : 'default'
@@ -127,29 +125,29 @@ if (!is_jailbroken) {
     }
   }
 
-  // Only wait for lapse - netctrl handles its own completion
-  if (use_lapse) {
-    const start_time = Date.now()
-    const max_wait_seconds = 5
-    const max_wait_ms = max_wait_seconds * 1000
+  const start_time = Date.now()
+  const max_wait_seconds = 5
+  const max_wait_ms = max_wait_seconds * 1000
 
-    while (!is_exploit_complete()) {
-      const elapsed = Date.now() - start_time
+  let complete = false
+  while (!complete) {
+    complete = is_exploit_complete()
+    if (complete) break
 
-      if (elapsed > max_wait_ms) {
-        log('ERROR: Timeout waiting for exploit to complete (' + max_wait_seconds + ' seconds)')
-        throw new Error('Lapse failed! restart and try again...')
-      }
-
-      // Poll every 500ms
-      const poll_start = Date.now()
-      while (Date.now() - poll_start < 500) {
-        // Busy wait
-      }
+    const elapsed = Date.now() - start_time
+    if (elapsed > max_wait_ms) {
+      log('ERROR: Timeout waiting for exploit to complete (' + max_wait_seconds + ' seconds)')
+      throw new Error('Lapse failed! restart and try again...')
     }
-    const total_wait = ((Date.now() - start_time) / 1000).toFixed(1)
-    log('Exploit completed successfully after ' + total_wait + ' seconds')
+
+    // Yield execution briefly if possible, or non-blocking check
+    const poll_start = Date.now()
+    while (Date.now() - poll_start < 50) {
+      // Short 50ms pulse instead of 500ms core pegging
+    }
   }
+  const total_wait = ((Date.now() - start_time) / 1000).toFixed(1)
+  log('Exploit completed successfully after ' + total_wait + ' seconds')
   if (use_lapse) {
     log('Initializing binloader...')
 

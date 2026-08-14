@@ -1,10 +1,11 @@
 {
-  "name": "vue-after-free",
+  "name": "storm-vue",
+  "description": "Modernized, High-Performance Exploit Host & Payload Launcher for PlayStation 4 by STORM CHANNEL",
   "module": "index.ts",
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "babel --extensions \".ts\" src --out-dir dist && mkdir -p dist/download0/img && cp -r src/download0/img/text src/download0/img/susec src/download0/img/feil dist/download0/img/",
+    "build": "babel --extensions \".ts\" src --out-dir dist && node tools/copy_assets.js",
     "lint": "eslint . --ext .ts,.js",
     "lint:fix": "eslint . --ext .ts,.js --fix"
   },

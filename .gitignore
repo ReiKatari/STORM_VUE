@@ -1,8 +1,8 @@
-# macOS related thing (i dont like it)
+# macOS
 .DS_Store
 
 # Node.js dependencies
-node_modules
+node_modules/
 
 # Node.js package lock files
 package-lock.json
@@ -12,4 +12,13 @@ bun.lock
 bun.lockb
 
 # Build output
-dist
+dist/
+
+# Large binary dumps and archives
+*.zip
+*.7z
+*.rar
+*.iso
+*.pkg
+CUSA00960/
+GoldHEN_v2.4b18.10/

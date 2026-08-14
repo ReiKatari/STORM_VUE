@@ -32,15 +32,6 @@ declare namespace jsmaf {
     broadcast (data: string): void
   }
 
-  declare class AudioClip {
-    volume: number
-
-    constructor ()
-    open (url: string): void
-    stop (): void
-    close (): void
-  }
-
   declare class XMLHttpRequest {
     readyState: number
     status: number
@@ -61,11 +52,14 @@ declare namespace jsmaf {
   declare function eval (code: string): unknown
 
   declare var gc: unknown
-
   declare var locale: string
+  declare var circleIsAdvanceButton: boolean
+  declare var loader_has_run: boolean
 
   declare function clearInterval (intervalID: number): void
   declare function setInterval (handler: () => void, timeout: number): number
+  declare function setTimeout (handler: () => void, timeout: number): number
+  declare function clearTimeout (timerID: number): void
 
   declare function exit (): void
 

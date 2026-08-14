@@ -1,14 +1,12 @@
 import { lang, useImageText, textImageBase } from 'download0/languages'
-import { libc_addr } from 'download0/userland'
-import { fn, BigInt } from 'download0/types'
 
 (function () {
   include('languages.js')
-  log('Loading main menu...')
+  log('Loading modernized main menu...')
 
   let currentButton = 0
   const buttons: Image[] = []
-  const buttonTexts: jsmaf.Text[] = []
+  const buttonTexts: (Image | jsmaf.Text)[] = []
   const buttonMarkers: Image[] = []
   const buttonOrigPos: { x: number, y: number }[] = []
   const textOrigPos: { x: number, y: number }[] = []
@@ -18,13 +16,13 @@ import { fn, BigInt } from 'download0/types'
 
   jsmaf.root.children.length = 0
 
-  new Style({ name: 'white', color: 'white', size: 24 })
-  new Style({ name: 'title', color: 'white', size: 32 })
+  // Modern Typography System
+  new Style({ name: 'white', color: '#FFFFFF', size: 24 })
+  new Style({ name: 'title', color: '#00F0FF', size: 36 })
+  new Style({ name: 'subtitle', color: '#94A3B8', size: 20 })
+  new Style({ name: 'badge', color: '#38BDF8', size: 18 })
 
-  if (typeof startBgmIfEnabled === 'function') {
-    startBgmIfEnabled()
-  }
-
+  // Modern Dark Background
   const background = new Image({
     url: 'file:///../download0/img/multiview_bg_VAF.png',
     x: 0,
@@ -34,29 +32,45 @@ import { fn, BigInt } from 'download0/types'
   })
   jsmaf.root.children.push(background)
 
+  // Top Modern HUD Header
   const centerX = 960
-  const logoWidth = 600
-  const logoHeight = 338
+  const logoWidth = 200
+  const logoHeight = 200
 
   const logo = new Image({
     url: 'file:///../download0/img/logo.png',
     x: centerX - logoWidth / 2,
-    y: 50,
+    y: 35,
     width: logoWidth,
     height: logoHeight
   })
   jsmaf.root.children.push(logo)
 
+  // Title & Header Subtitle Text
+  const headerTitle = new jsmaf.Text()
+  headerTitle.text = 'STORM VUE'
+  headerTitle.x = centerX - 110
+  headerTitle.y = 250
+  headerTitle.style = 'title'
+  jsmaf.root.children.push(headerTitle)
+
+  const headerSubtitle = new jsmaf.Text()
+  headerSubtitle.text = lang.subtitleMain || 'STORM CHANNEL • PS4 USERLAND & KERNEL EXPLOIT ENGINE (FW 7.00 - 13.00)'
+  headerSubtitle.x = centerX - 370
+  headerSubtitle.y = 300
+  headerSubtitle.style = 'subtitle'
+  jsmaf.root.children.push(headerSubtitle)
+
   const menuOptions = [
-    { label: lang.jailbreak, script: 'loader.js', imgKey: 'jailbreak' },
-    { label: lang.payloadMenu, script: 'payload_host.js', imgKey: 'payloadMenu' },
-    { label: lang.config, script: 'config_ui.js', imgKey: 'config' }
+    { label: lang.jailbreak || 'Jailbreak', script: 'loader.js', imgKey: 'jailbreak' },
+    { label: lang.payloadMenu || 'Payload Menu', script: 'payload_host.js', imgKey: 'payloadMenu' },
+    { label: lang.config || 'Config', script: 'config_ui.js', imgKey: 'config' }
   ]
 
-  const startY = 450
-  const buttonSpacing = 120
-  const buttonWidth = 400
-  const buttonHeight = 80
+  const startY = 400
+  const buttonSpacing = 110
+  const buttonWidth = 460
+  const buttonHeight = 85
 
   for (let i = 0; i < menuOptions.length; i++) {
     const btnX = centerX - buttonWidth / 2
@@ -69,15 +83,16 @@ import { fn, BigInt } from 'download0/types'
       width: buttonWidth,
       height: buttonHeight
     })
+    button.alpha = 0.8
     buttons.push(button)
     jsmaf.root.children.push(button)
 
     const marker = new Image({
       url: 'file:///assets/img/ad_pod_marker.png',
-      x: btnX + buttonWidth - 50,
-      y: btnY + 35,
-      width: 12,
-      height: 12,
+      x: btnX + buttonWidth - 45,
+      y: btnY + buttonHeight / 2 - 10,
+      width: 16,
+      height: 16,
       visible: false
     })
     buttonMarkers.push(marker)
@@ -87,16 +102,16 @@ import { fn, BigInt } from 'download0/types'
     if (useImageText) {
       btnText = new Image({
         url: textImageBase + menuOptions[i]!.imgKey + '.png',
-        x: btnX + 20,
-        y: btnY + 15,
-        width: 300,
+        x: btnX + 30,
+        y: btnY + 18,
+        width: 320,
         height: 50
       })
     } else {
       btnText = new jsmaf.Text()
       btnText.text = menuOptions[i]!.label
-      btnText.x = btnX + buttonWidth / 2 - 60
-      btnText.y = btnY + buttonHeight / 2 - 12
+      btnText.x = btnX + 40
+      btnText.y = btnY + buttonHeight / 2 - 14
       btnText.style = 'white'
     }
     buttonTexts.push(btnText)
@@ -106,8 +121,9 @@ import { fn, BigInt } from 'download0/types'
     textOrigPos.push({ x: btnText.x, y: btnText.y })
   }
 
+  // Exit Button Card
   const exitX = centerX - buttonWidth / 2
-  const exitY = startY + menuOptions.length * buttonSpacing + 100
+  const exitY = startY + menuOptions.length * buttonSpacing + 20
 
   const exitButton = new Image({
     url: normalButtonImg,
@@ -116,15 +132,16 @@ import { fn, BigInt } from 'download0/types'
     width: buttonWidth,
     height: buttonHeight
   })
+  exitButton.alpha = 0.8
   buttons.push(exitButton)
   jsmaf.root.children.push(exitButton)
 
   const exitMarker = new Image({
     url: 'file:///assets/img/ad_pod_marker.png',
-    x: exitX + buttonWidth - 50,
-    y: exitY + 35,
-    width: 12,
-    height: 12,
+    x: exitX + buttonWidth - 45,
+    y: exitY + buttonHeight / 2 - 10,
+    width: 16,
+    height: 16,
     visible: false
   })
   buttonMarkers.push(exitMarker)
@@ -134,16 +151,16 @@ import { fn, BigInt } from 'download0/types'
   if (useImageText) {
     exitText = new Image({
       url: textImageBase + 'exit.png',
-      x: exitX + 20,
-      y: exitY + 15,
-      width: 300,
+      x: exitX + 30,
+      y: exitY + 18,
+      width: 320,
       height: 50
     })
   } else {
     exitText = new jsmaf.Text()
-    exitText.text = lang.exit
-    exitText.x = exitX + buttonWidth / 2 - 20
-    exitText.y = exitY + buttonHeight / 2 - 12
+    exitText.text = lang.exit || 'Exit'
+    exitText.x = exitX + 40
+    exitText.y = exitY + buttonHeight / 2 - 14
     exitText.style = 'white'
   }
   buttonTexts.push(exitText)
@@ -160,13 +177,13 @@ import { fn, BigInt } from 'download0/types'
     return (1 - Math.cos(t * Math.PI)) / 2
   }
 
-  function animateZoomIn (btn: Image, text: jsmaf.Text, btnOrigX: number, btnOrigY: number, textOrigX: number, textOrigY: number) {
+  function animateZoomIn (btn: Image, text: jsmaf.Text | Image, btnOrigX: number, btnOrigY: number, textOrigX: number, textOrigY: number) {
     if (zoomInInterval) jsmaf.clearInterval(zoomInInterval)
     const btnW = buttonWidth
     const btnH = buttonHeight
     const startScale = btn.scaleX || 1.0
-    const endScale = 1.1
-    const duration = 175
+    const endScale = 1.08
+    const duration = 150
     let elapsed = 0
     const step = 16
 
@@ -192,13 +209,13 @@ import { fn, BigInt } from 'download0/types'
     }, step)
   }
 
-  function animateZoomOut (btn: Image, text: jsmaf.Text, btnOrigX: number, btnOrigY: number, textOrigX: number, textOrigY: number) {
+  function animateZoomOut (btn: Image, text: jsmaf.Text | Image, btnOrigX: number, btnOrigY: number, textOrigX: number, textOrigY: number) {
     if (zoomOutInterval) jsmaf.clearInterval(zoomOutInterval)
     const btnW = buttonWidth
     const btnH = buttonHeight
-    const startScale = btn.scaleX || 1.1
+    const startScale = btn.scaleX || 1.08
     const endScale = 1.0
-    const duration = 175
+    const duration = 150
     let elapsed = 0
     const step = 16
 
@@ -225,36 +242,35 @@ import { fn, BigInt } from 'download0/types'
   }
 
   function updateHighlight () {
-    // Animate out the previous button
     const prevButtonObj = buttons[prevButton]
-    const buttonMarker = buttonMarkers[prevButton]
-    if (prevButton >= 0 && prevButton !== currentButton && prevButtonObj && buttonMarker) {
+    const prevMarker = buttonMarkers[prevButton]
+    if (prevButton >= 0 && prevButton !== currentButton && prevButtonObj && prevMarker) {
       prevButtonObj.url = normalButtonImg
-      prevButtonObj.alpha = 0.7
+      prevButtonObj.alpha = 0.75
       prevButtonObj.borderColor = 'transparent'
       prevButtonObj.borderWidth = 0
-      buttonMarker.visible = false
+      prevMarker.visible = false
       animateZoomOut(prevButtonObj, buttonTexts[prevButton]!, buttonOrigPos[prevButton]!.x, buttonOrigPos[prevButton]!.y, textOrigPos[prevButton]!.x, textOrigPos[prevButton]!.y)
     }
 
-    // Set styles for all buttons
     for (let i = 0; i < buttons.length; i++) {
       const button = buttons[i]
       const buttonMarker = buttonMarkers[i]
       const buttonText = buttonTexts[i]
       const buttonOrigPos_ = buttonOrigPos[i]
       const textOrigPos_ = textOrigPos[i]
-      if (button === undefined || buttonText === undefined || buttonOrigPos_ === undefined || textOrigPos_ === undefined || buttonMarker === undefined) continue
+      if (!button || !buttonText || !buttonOrigPos_ || !textOrigPos_ || !buttonMarker) continue
+
       if (i === currentButton) {
         button.url = selectedButtonImg
         button.alpha = 1.0
-        button.borderColor = 'rgb(100,180,255)'
+        button.borderColor = 'rgb(0, 240, 255)'
         button.borderWidth = 3
         buttonMarker.visible = true
         animateZoomIn(button, buttonText, buttonOrigPos_.x, buttonOrigPos_.y, textOrigPos_.x, textOrigPos_.y)
       } else if (i !== prevButton) {
         button.url = normalButtonImg
-        button.alpha = 0.7
+        button.alpha = 0.75
         button.borderColor = 'transparent'
         button.borderWidth = 0
         button.scaleX = 1.0
@@ -295,6 +311,8 @@ import { fn, BigInt } from 'download0/types'
     }
   }
 
+  const confirmKey = jsmaf.circleIsAdvanceButton ? 13 : 14
+
   jsmaf.onKeyDown = function (keyCode) {
     if (keyCode === 6 || keyCode === 5) {
       currentButton = (currentButton + 1) % buttons.length
@@ -302,12 +320,11 @@ import { fn, BigInt } from 'download0/types'
     } else if (keyCode === 4 || keyCode === 7) {
       currentButton = (currentButton - 1 + buttons.length) % buttons.length
       updateHighlight()
-    } else if (keyCode === 14) {
+    } else if (keyCode === confirmKey) {
       handleButtonPress()
     }
   }
 
   updateHighlight()
-
-  log('Main menu loaded.')
+  log('Modern Main menu loaded.')
 })()
