@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="180" height="180" alt="STORM VUE Icon" src="media/icon.jpg" style="border-radius: 50%; box-shadow: 0 0 30px rgba(0, 240, 255, 0.4);" />
+  <img width="180" height="180" alt="STORM VUE Icon" src="media/icon.png" style="border-radius: 50%; box-shadow: 0 0 30px rgba(0, 240, 255, 0.4);" />
 </p>
 
 <h1 align="center">⚡ STORM VUE ⚡</h1>
@@ -16,18 +16,6 @@
   <a href="https://rutube.ru/channel/42609927/">
     <img src="https://img.shields.io/badge/Rutube-STORM%20CHANNEL-FF0000?style=for-the-badge&logo=youtube" alt="Rutube">
   </a>
-</p>
-
----
-
-## 📸 Интерфейс (Screenshots)
-
-<p align="center">
-  <img width="85%" alt="STORM VUE Main Menu" src="media/preview.jpg" />
-</p>
-
-<p align="center">
-  <img width="85%" alt="STORM VUE Network Receiver" src="media/net_receiver.jpg" />
 </p>
 
 ---
@@ -84,10 +72,8 @@
 
 ```text
 STORM_VUE/
-├── media/                     # Скриншоты и иконки для документации
-│   ├── icon.jpg               # Официальный логотип STORM VUE
-│   ├── preview.jpg            # Скриншот главного меню
-│   └── net_receiver.jpg       # Скриншот сетевого приёмника
+├── media/                     # Медиа-ресурсы документации
+│   └── icon.png               # Официальный логотип STORM VUE
 ├── src/
 │   ├── download0/             # Ядро приложения JSMAF
 │   │   ├── img/               # Графика и логотипы
