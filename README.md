@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="200" height="200" alt="STORM VUE Icon" src="media/icon.png" />
+  <img width="200" height="200" alt="STORM VUE Icon" src="https://raw.githubusercontent.com/ReiKatari/STORM_VUE/main/media/storm_vue_icon.png" />
 </p>
 
 <h1 align="center">⚡ STORM VUE ⚡</h1>
