@@ -18,4 +18,5 @@ function copyDir (src, dest) {
 copyDir('src/download0/img', 'dist/download0/img')
 copyDir('src/download0/payloads', 'dist/download0/payloads')
 copyDir('src/download0/themes', 'dist/download0/themes')
-console.log('All assets, payloads, and themes copied successfully.')
+copyDir('src/icon', 'dist/icon')
+console.log('All assets, payloads, themes, and icons copied successfully.')
