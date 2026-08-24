@@ -1,7 +1,5 @@
 <div align="center">
 
-<img src="logo.png" width="128" height="128" alt="STORM VUE Logo" />
-
 # ⚡ STORM VUE
 
 <p align="center">
@@ -10,6 +8,7 @@
 
 [![Version](https://img.shields.io/badge/version-1.0.0-00D2FF.svg?style=for-the-badge)](https://github.com/ReiKatari/STORM_VUE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%2011%20%7C%2010-0EA5E9.svg?style=for-the-badge)](https://github.com/ReiKatari/STORM_VUE)
+[![Tech](https://img.shields.io/badge/Tech-Vue.js+%2f+TailwindCSS+%2f+WebSockets-6366F1.svg?style=for-the-badge)](https://github.com/ReiKatari/STORM_VUE)
 [![Publisher](https://img.shields.io/badge/Publisher-STORM%20TEAM-10B981.svg?style=for-the-badge)](https://github.com/ReiKatari)
 [![Developer](https://img.shields.io/badge/Author-ReiKatari-F59E0B.svg?style=for-the-badge)](https://github.com/ReiKatari)
 [![Signed](https://img.shields.io/badge/Security-SHA256%20Signed-10B981.svg?style=for-the-badge)](https://github.com/ReiKatari)
@@ -20,12 +19,12 @@
 
 ## 🌟 О проекте / Overview
 
-**STORM VUE** — компонент программного комплекса **STORM**, разработанный с упором на максимальную производительность, современный дизайн и надёжность.
+**STORM VUE** — компонент экосистемы **STORM**, разработанный с упором на максимальную производительность, современный дизайн и надёжность.
 
-* **Версия:** $ver
+* **Версия:** $(System.Collections.Hashtable.Ver)
 * **Издатель:** STORM TEAM
 * **Ведущий разработчик:** ReiKatari
-* **Технологический стек:** $tech
+* **Технологический стек:** $(System.Collections.Hashtable.Tech)
 
 ---
 
@@ -37,7 +36,7 @@
 2. Выберите режим:
    * **Стандартная установка** — установка в C:\Program Files\STORM VUE с созданием ярлыков и регистрацией в системе.
    * **Портативная версия** — распаковка в любую выбранную папку без изменения реестра.
-3. Опция автоматической регистрации доверенного сертификата STORM TEAM исключает предупреждения SmartScreen и Smart App Control.
+3. Опция автоматической регистрации доверенного сертификата STORM TEAM позволяет навсегда исключить предупреждения SmartScreen и Smart App Control.
 
 ---
 
