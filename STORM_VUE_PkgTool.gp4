@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<psproject xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" fmt="gp4" version="1000">
+  <volume>
+    <volume_type>pkg_ps4_patch</volume_type>
+    <volume_id>PS4VOLUME</volume_id>
+    <volume_ts>2026-08-11 16:00:00</volume_ts>
+    <package content_id="UT0016-CUSA00960_00-COBRAPCKGE000000" passcode="00000000000000000000000000000000" storage_type="digital25" app_type="full" app_ver="99.99" version="01.00" />
+    <chunk_info chunk_count="1" scenario_count="1">
+      <chunks>
+        <chunk id="0" layer_no="0" label="Chunk #0" />
+      </chunks>
+      <scenarios default_id="0">
+        <scenario id="0" type="sp" initial_chunk_count="1" label="Scenario #0">0</scenario>
+      </scenarios>
+    </chunk_info>
+  </volume>
+  <files img_no="0">
+    <file targ_path="sce_sys/param.sfo" orig_path="tools/param_patch_new.sfo" />
+    <file targ_path="sce_sys/icon0.png" orig_path="src/download0/img/logo.png" />
+    <file targ_path="sce_sys/playgo-chunk.dat" orig_path="tools/playgo-chunk.dat" />
+    <file targ_path="sce_sys/playgo-manifest.xml" orig_path="tools/playgo-manifest.xml" />
+    <file targ_path="download0/loader.js" orig_path="dist/download0/loader.js" />
+    <file targ_path="download0/binloader.js" orig_path="dist/download0/binloader.js" />
+    <file targ_path="download0/lapse.js" orig_path="dist/download0/lapse.js" />
+    <file targ_path="download0/netctrl_c0w_twins.js" orig_path="dist/download0/netctrl_c0w_twins.js" />
+    <file targ_path="download0/userland.js" orig_path="dist/download0/userland.js" />
+    <file targ_path="download0/config.json" orig_path="dist/download0/config.json" />
+    <file targ_path="download0/languages.js" orig_path="dist/download0/languages.js" />
+    <file targ_path="download0/payloads/payload.bin" orig_path="dist/download0/payloads/payload.bin" />
+    <file targ_path="download0/payloads/GoldHEN.bin" orig_path="dist/download0/payloads/GoldHEN.bin" />
+    <file targ_path="download0/themes/default/main.js" orig_path="dist/download0/themes/default/main.js" />
+    <file targ_path="download0/themes/default/config_ui.js" orig_path="dist/download0/themes/default/config_ui.js" />
+    <file targ_path="download0/themes/default/payload_host.js" orig_path="dist/download0/themes/default/payload_host.js" />
+  </files>
+  <rootdir>
+    <dir targ_name="sce_sys" />
+    <dir targ_name="download0">
+      <dir targ_name="payloads" />
+      <dir targ_name="themes">
+        <dir targ_name="default" />
+      </dir>
+    </dir>
+  </rootdir>
+</psproject>
